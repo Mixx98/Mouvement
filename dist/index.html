@@ -5,7 +5,7 @@
   <meta name="theme-color" content="#eef1e8">
   <meta name="description" content="마우스의 움직임이 멜로디가 되는 공간. 화면을 자유롭게 누비며 나만의 음악을 지휘해 보세요.">
   <title>Mouvement — 움직임이 음악이 되는 순간</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body data-theme="piano">
   <main id="instrument" aria-label="마우스로 연주하는 음정 공간">
@@ -55,6 +55,7 @@
         <p class="panel-intro">작은 밴드가 곁에서 연주해요.<br>그 위에 당신만의 멜로디를 더해 보세요.</p>
         <div class="track-list"><button class="track selected" data-track="lofi" aria-pressed="true"><span>☕</span><strong>느린 오후<small>LO-FI · 포근한 건반과 느긋한 비트</small></strong><span>76</span></button><button class="track" data-track="forest" aria-pressed="false"><span>❧</span><strong>숲의 호흡<small>AMBIENT · 스트링과 하프의 여백</small></strong><span>60</span></button><button class="track" data-track="night" aria-pressed="false"><span>☾</span><strong>별빛 산책<small>CHILL · 몽환적인 신스와 리듬</small></strong><span>100</span></button></div>
         <button id="bgm-panel-toggle" class="bgm-play">▷ BGM 시작하기</button>
+        <div class="pattern-flow"><span>✧ 매번 새롭게 흐르는 반주</span><p>8마디마다 코드 진행과 리듬, 멜로디가 자연스럽게 바뀌어요. 같은 분위기로, 조금씩 다른 음악을 만듭니다.</p><small id="pattern-status">BGM을 시작하면 새로운 패턴을 만나요.</small></div>
         <label class="range-label" for="bgm-volume">반주 음량 <output id="bgm-volume-value">35%</output></label><input id="bgm-volume" type="range" min="0" max="100" value="35">
         <label class="switch-row" for="harmonize"><span>반주에 어울리는 음으로 연주</span><input id="harmonize" type="checkbox" checked></label><p class="field-help">현재 코드에 맞춰 음정을 살짝 맞춰 줘요.<br>조성과 음계를 바꾸면 반주도 함께 바뀝니다.</p>
       </div>
@@ -72,5 +73,5 @@
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
-  <script src="music.js?v=4"></script><script src="app.js?v=4"></script>
+  <script src="music.js?v=5"></script><script src="app.js?v=5"></script>
 </body></html>

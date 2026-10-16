@@ -1,6 +1,39 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const M=require('../dist/music.js');
+test('arrangements change every phrase and remain deterministic across lookahead boundaries',()=>{
+  for(const seed of [0,1,42,987654321,4294967295]){
+    const arrangement=M.createArrangement(seed),again=M.createArrangement(seed),progressions=new Set(),grooves=new Set();let previous;
+    for(let cycle=0;cycle<24;cycle++){
+      const phrase=arrangement.phrase(cycle);assert.deepEqual(phrase,again.phrase(cycle));
+      progressions.add(phrase.progression.join());grooves.add(phrase.groove);
+      if(previous){assert.notDeepEqual(phrase.progression,previous.progression);assert.notEqual(phrase.groove,previous.groove);}previous=phrase;
+    }
+    assert.equal(progressions.size,6);assert.equal(grooves.size,4);
+    assert.deepEqual(arrangement.phrase(0),again.phrase(0));
+    const boundary=arrangement.chord(8,9,'minor');arrangement.chord(7,9,'minor');assert.deepEqual(boundary,arrangement.chord(8,9,'minor'));
+  }
+  assert.notDeepEqual(M.createArrangement(123).phrase(0),M.createArrangement(124).phrase(0));
+});
+test('all evolving BGM events stay bounded, tonal, and aligned with live harmonization',()=>{
+  const arrangement=M.createArrangement(42),signatures={};
+  for(const track of Object.keys(M.tracks)){
+    signatures[track]=new Set();
+    for(const scale of Object.keys(M.scales))for(const root of [0,2,4,5,7,9])for(let bar=0;bar<48;bar++){
+      const chord=arrangement.chord(bar,root,scale);assert.equal(chord.notes.length,3);
+      for(let step=0;step<8;step++){
+        const result=M.bgmStep(bar,step,root,scale,track,arrangement);assert.deepEqual(result.chord,chord);assert.ok(result.events.length<12);
+        if(root===0&&scale==='major'&&bar%8===0)signatures[track].add(result.name);
+        for(const event of result.events){assert.ok(event.offset>=0&&event.offset<.5);assert.ok(event.velocity>0&&event.velocity<=1);
+          if(event.drum){assert.notEqual(track,'forest');assert.ok(['kick','snare','hat'].includes(event.drum));}
+          else{assert.ok(M.presets[event.preset]);assert.ok(Number.isFinite(event.duration)&&event.duration>0&&event.duration<=5);assert.ok(event.midi>=24&&event.midi<=108);assert.ok(chord.notes.some(n=>n%12===event.midi%12));}
+        }
+      }
+      for(const midi of [48,61,79,95]){const adjusted=M.harmonize(midi,chord,root,scale);assert.ok(chord.notes.some(n=>n%12===adjusted%12));assert.ok(M.scales[scale].includes((adjusted-root+120)%12));}
+    }
+    assert.equal(signatures[track].size,4);
+  }
+});
 test('distortion stays bounded and symmetric while adding soft clipping',()=>{
   for(const amount of [2.5,8]){
     const curve=M.driveCurve(amount);assert.equal(curve[0],-1);assert.equal(curve.at(-1),1);

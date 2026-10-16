@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $ = s => document.querySelector(s);
-  const {presets,scales,names,tracks,moods,nextGridTime,gridShape,gridMidi,chordForBar,harmonize,keyMidi} = Music;
+  const {presets,scales,names,tracks,moods,nextGridTime,gridShape,gridMidi,harmonize,keyMidi} = Music;
   const state = {started:false,paused:false,muted:false,preset:'piano',root:0,scale:'major',volume:.55,reverb:.4,labels:true,density:'dense',keyMode:'fixed',track:'lofi',tempo:76,bgmVolume:.35,harmonize:true,bgm:false};
   state.timing='free';state.division=2;
   const savedKeys=['preset','root','scale','volume','reverb','labels','density','keyMode','track','tempo','bgmVolume','harmonize','timing','division'];
@@ -19,6 +19,7 @@
   let scheduler=null,nextBeatTime=0,beatIndex=0,currentChord=null,visualTimers=new Set(),audioStarting=null;
   let transportOrigin=0;
   const beatQueue=Music.createBeatQueue();
+  let arrangement=Music.createArrangement();
   const driveCurves=new Map();
   const grid=$('#note-grid'),canvas=$('#trails'),paint=canvas.getContext('2d');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -70,15 +71,10 @@
     gain.gain.setValueAtTime(Math.max(.001,volume),time);gain.gain.exponentialRampToValueAtTime(.0001,time+duration);source.start(time);source.stop(time+duration+.02);trackVoice({gain,oscs:[source],end:time+duration+.05,bgm:true});source.onended=()=>{source.disconnect();gain.disconnect();filter.disconnect();};
   }
   function scheduleBeat(index,time){
-    const bar=Math.floor(index/8),step=index%8,chord=chordForBar(bar,state.root,state.scale),beat=60/state.tempo,track=state.track;
-    const play=(midi,preset,velocity,duration,offset=0)=>sound(midi,velocity,{preset,duration,time:time+offset,bgm:true});
-    if(step===0){chord.notes.forEach((midi,i)=>play(midi,tracks[track].instrument,.48,beat*(track==='forest'?7:3.4),i*.018));play(chord.bass,'epiano',.8,beat*1.8);}
-    if(step===4){play(chord.bass+7,'epiano',.5,beat*1.4);if(track==='lofi')chord.notes.forEach((midi,i)=>play(midi,'epiano',.3,beat*1.4,i*.015));}
-    if(track==='forest'&&[1,3,6].includes(step))play(chord.notes[(bar+step)%3]+12,'harp',.28,beat*3);
-    if(track==='night'&&step%2===0)play(chord.notes[(step/2+bar)%3]+12,'synth',.35,beat*.9);
-    if(track==='lofi'&&bar%2===1&&[3,7].includes(step))play(chord.notes[step===3?1:2]+12,'piano',.24,beat*1.3);
-    if(track!=='forest'){if(step===0||step===4||(track==='night'&&step===6))drum('kick',time,.32);if(step===2||step===6)drum('snare',time,.075);drum('hat',time+(track==='lofi'&&step%2===1?.025:0),step%2?.018:.032);}
-    const timer=setTimeout(()=>{visualTimers.delete(timer);if(!state.bgm||state.paused)return;currentChord=chord;$('#chord-label').textContent=chord.label;document.querySelectorAll('.beat-dots i').forEach((dot,i)=>dot.classList.toggle('on',i===Math.floor(step/2)));$('#bgm-now').dataset.bar=String(bar%8+1);},Math.max(0,(time-ctx.currentTime)*1000));visualTimers.add(timer);
+    const bar=Math.floor(index/8),step=index%8,beat=60/state.tempo;
+    const {chord,events,phrase,name}=Music.bgmStep(bar,step,state.root,state.scale,state.track,arrangement);
+    for(const event of events){const when=time+event.offset*beat;if(event.drum)drum(event.drum,when,event.velocity);else sound(event.midi,event.velocity,{preset:event.preset,duration:event.duration*beat,time:when,bgm:true});}
+    const timer=setTimeout(()=>{visualTimers.delete(timer);if(!state.bgm||state.paused)return;currentChord=chord;$('#chord-label').textContent=chord.label;document.querySelectorAll('.beat-dots i').forEach((dot,i)=>dot.classList.toggle('on',i===Math.floor(step/2)));$('#bgm-now').dataset.bar=String(bar%8+1);$('#pattern-status').textContent=`지금은 ${name} · ${phrase.cycle+1}번째 흐름 · ${bar%8+1}/8마디`;$('#track-subtitle').textContent=`${tracks[state.track].subtitle} · FLOW ${phrase.cycle+1}`;},Math.max(0,(time-ctx.currentTime)*1000));visualTimers.add(timer);
   }
   function schedulerTick(){
     if(!ctx||ctx.state!=='running'||state.paused)return;
@@ -90,16 +86,16 @@
     for(const [time,event] of beatQueue.drain(now+.02))if(time>=now-.05)performMelody(event,Math.max(time,now),true);
   }
   function stopScheduler(){clearInterval(scheduler);scheduler=null;beatQueue.clear();visualTimers.forEach(clearTimeout);visualTimers.clear();if(ctx)voices.filter(v=>v.bgm||v.quantized).forEach(killVoice);currentChord=null;}
-  function startScheduler(){stopScheduler();beatIndex=0;transportOrigin=ctx.currentTime+.06;nextBeatTime=transportOrigin;currentChord=chordForBar(0,state.root,state.scale);schedulerTick();scheduler=setInterval(schedulerTick,10);}
+  function startScheduler(){stopScheduler();beatIndex=0;transportOrigin=ctx.currentTime+.06;nextBeatTime=transportOrigin;currentChord=arrangement.chord(0,state.root,state.scale);schedulerTick();scheduler=setInterval(schedulerTick,10);}
   function syncBgmUI(){const track=tracks[state.track];$('#bgm-now').hidden=!state.bgm;$('#track-title').textContent=track.name;$('#track-subtitle').textContent=track.subtitle;$('#bgm-toggle').setAttribute('aria-pressed',String(state.bgm));$('#bgm-icon').textContent=state.bgm?'□':'▷';$('#bgm-label').textContent=state.bgm?'BGM 끄기':'BGM과 합주';$('#bgm-panel-toggle').textContent=state.bgm?'□ BGM 멈추기':'▷ BGM 시작하기';$('#bgm-panel-toggle').setAttribute('aria-pressed',String(state.bgm));document.querySelectorAll('[data-track]').forEach(b=>{const selected=b.dataset.track===state.track;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});document.body.classList.toggle('bgm-playing',state.bgm&&!state.paused);}
-  async function toggleBgm(){if(state.bgm)state.bgm=false;else{if(!await start())return;state.bgm=true;}restartBgm();applyLevels();syncBgmUI();}
+  async function toggleBgm(){if(state.bgm)state.bgm=false;else{if(!await start())return;state.bgm=true;arrangement=Music.createArrangement();}restartBgm();applyLevels();syncBgmUI();}
   function restartBgm(){stopScheduler();if((state.bgm||state.timing==='grid')&&!state.paused&&ctx?.state==='running')startScheduler();}
   function flash(index,x,y,midi,caption='IN THE MOMENT'){
     const cell=cells[index];if(!cell)return;cell.classList.add('active');clearTimeout(cell.fade);cell.fade=setTimeout(()=>cell.classList.remove('active'),650);$('#current-note').textContent=noteName(midi);$('#note-caption').textContent=caption;
     if(!reduced){rings.push({x,y,age:0});for(let i=0;i<7;i++)particles.push({x,y,vx:(Math.random()-.5)*1.4,vy:(Math.random()-.5)*1.4-.3,age:0,life:40+Math.random()*35});}
     if(rings.length>30)rings.shift();if(particles.length>240)particles.splice(0,particles.length-240);
   }
-  function melodyMidi(midi,time){const chord=state.bgm?chordForBar(Math.max(0,Math.floor((time-transportOrigin+.000001)/(240/state.tempo))),state.root,state.scale):null;return chord&&state.harmonize?harmonize(midi,chord,state.root,state.scale):midi;}
+  function melodyMidi(midi,time){const chord=state.bgm?arrangement.chord(Math.max(0,Math.floor((time-transportOrigin+.000001)/(240/state.tempo))),state.root,state.scale):null;return chord&&state.harmonize?harmonize(midi,chord,state.root,state.scale):midi;}
   function performMelody(event,time,quantized=false){
     if(state.paused||state.muted)return;
     const midi=melodyMidi(event.midi,time);sound(midi,event.velocity,{time,quantized});
@@ -133,7 +129,7 @@
   $('#presets').innerHTML='<div class="preset-family"><span>01 / ELECTRIC ENERGY</span><strong>조금 더 대담하게.</strong><small>일렉기타부터 네온빛 전자음까지</small></div>'+Object.entries(presets).filter(([,p])=>p.family==='electric').map(presetCard).join('')+'<div class="preset-family"><span>02 / SOFT & ORGANIC</span><strong>익숙한, 편안한 울림.</strong></div>'+Object.entries(presets).filter(([,p])=>p.family!=='electric').map(presetCard).join('');
   function setPreset(value){state.preset=value;document.body.dataset.theme=value;$('#preset-name').textContent=presets[value].name;$('#preset-icon').textContent=presets[value].icon;document.querySelectorAll('[data-preset]').forEach(b=>{const active=b.dataset.preset===value;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});rgb=getComputedStyle(document.body).getPropertyValue('--rgb').trim();buildGrid();syncMoods();persist();}
   document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',async()=>{setPreset(b.dataset.preset);if(state.started&&!state.paused){try{await initAudio();sound(60+state.root,.8);}catch(e){toast(e.message);}}}));
-  document.querySelectorAll('[data-track]').forEach(b=>b.addEventListener('click',()=>{state.track=b.dataset.track;state.tempo=tracks[state.track].tempo;syncRhythm();syncBgmUI();restartBgm();persist();}));
+  document.querySelectorAll('[data-track]').forEach(b=>b.addEventListener('click',()=>{state.track=b.dataset.track;arrangement=Music.createArrangement();state.tempo=tracks[state.track].tempo;syncRhythm();syncBgmUI();restartBgm();persist();}));
   for(const key of ['root','scale','density'])$('#'+key).addEventListener('change',e=>{state[key]=key==='root'?Number(e.target.value):e.target.value;beatQueue.clear();buildGrid();if(key!=='density')restartBgm();syncMoods();persist();});
   for(const [id,key] of [['volume','volume'],['reverb','reverb'],['bgm-volume','bgmVolume']])$('#'+id).addEventListener('input',e=>{state[key]=Number(e.target.value)/100;$('#'+id+'-value').textContent=e.target.value+'%';applyLevels();syncMoods();persist();});
   function setTempo(value){const number=Number(value);if(value===''||!Number.isFinite(number)){syncRhythm();return;}state.tempo=Math.max(30,Math.min(240,Math.round(number)));syncRhythm();restartBgm();persist();}
