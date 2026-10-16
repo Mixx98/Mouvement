@@ -19,6 +19,21 @@
     forest:{name:'숲의 호흡',subtitle:'AMBIENT · HARP & STRINGS',tempo:60,instrument:'strings'},
     night:{name:'별빛 산책',subtitle:'CHILL · SYNTH & PULSE',tempo:100,instrument:'synth'}
   };
+  const moods = {
+    comfort:{name:'포근한 위로',icon:'☁',description:'부드럽고 다정한, 마음이 놓이는 선율',preset:'piano',root:0,scale:'major',reverb:.4},
+    sunshine:{name:'햇살 같은 기분',icon:'☀',description:'맑고 통통 튀는, 가벼운 설렘',preset:'kalimba',root:7,scale:'major',reverb:.25},
+    rain:{name:'비 오는 밤',icon:'☂',description:'차분하고 아련한, 혼자만의 시간',preset:'epiano',root:9,scale:'minor',reverb:.55},
+    forest:{name:'숲속의 쉼',icon:'❧',description:'숨을 고르듯 편안하고 청량하게',preset:'flute',root:5,scale:'major',reverb:.5},
+    dream:{name:'꿈속을 걷듯',icon:'☾',description:'몽환적이고 신비로운, 깊은 여운',preset:'synth',root:2,scale:'minor',reverb:.7},
+    hope:{name:'새로운 시작',icon:'✦',description:'밝게 펼쳐지는, 작은 용기와 희망',preset:'harp',root:2,scale:'diatonic',reverb:.45}
+  };
+  function nextGridTime(now,origin,bpm,division){const interval=60/bpm/division;return origin+Math.max(0,Math.ceil((now+.025-origin)/interval-1e-9))*interval;}
+  function createBeatQueue(){const events=new Map();return {
+    offer(time,event){events.set(time,event);},
+    drain(before){const ready=[...events].filter(([time])=>time<=before).sort((a,b)=>a[0]-b[0]);ready.forEach(([time])=>events.delete(time));return ready;},
+    clear(){events.clear();},
+    get size(){return events.size;}
+  };}
   function gridShape(density,mobile){return (mobile?{wide:[6,9],dense:[10,16],fine:[14,22]}:{wide:[12,7],dense:[20,12],fine:[28,16]})[density]||[20,12];}
   function scaleNote(step,root,scale,base=48){const notes=scales[scale];return base+root+Math.floor(step/notes.length)*12+notes[((step%notes.length)+notes.length)%notes.length];}
   function gridMidi(col,row,cols,rows,root,scale){return scaleNote(Math.round(col/(cols-1)*11+(rows-1-row)/(rows-1)*6),root,scale);}
@@ -39,6 +54,6 @@
       input(event){if(event.inputType?.startsWith('delete')||!event.data?.trim()||now()-lastPhysical<180||now()<commitUntil||(composing&&physicalComposition))return null;return Array.from(event.data).at(-1);}
     };
   }
-  const api={scales,names,presets,tracks,gridShape,gridMidi,scaleNote,chordForBar,harmonize,keyMidi,createTypingGate};
+  const api={scales,names,presets,tracks,moods,nextGridTime,createBeatQueue,gridShape,gridMidi,scaleNote,chordForBar,harmonize,keyMidi,createTypingGate};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Music=api;
 })(globalThis);

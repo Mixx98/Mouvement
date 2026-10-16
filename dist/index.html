@@ -29,29 +29,37 @@
     <section id="writing" class="writing-card" data-ui aria-label="글로 연주" hidden>
       <div class="writing-head"><div><span class="eyebrow">WORDS INTO MELODY</span><h2>오늘의 마음을 연주해요.</h2></div><button id="close-writing" class="icon-button" aria-label="글쓰기 닫기">×</button></div>
       <textarea id="music-text" aria-label="연주할 문장" placeholder="오늘 정말 수고했어. 내일도 힘내보자…" spellcheck="false" maxlength="10000"></textarea>
-      <div class="writing-foot"><span>한글도, 영문도. 입력하는 순간 선율이 돼요.</span><label class="sr-only" for="key-mode">글자 음정 방식</label><select id="key-mode"><option value="fixed">글자마다 같은 음</option><option value="random">매번 새로운 음</option></select></div>
+      <div class="writing-foot"><span>한글도, 영문도. 당신의 문장이 선율이 돼요.</span><label class="sr-only" for="key-mode">글자 음정 방식</label><select id="key-mode"><option value="fixed">글자마다 같은 음</option><option value="random">매번 새로운 음</option></select></div>
+      <div class="writing-rhythm"><button id="writing-sync" aria-pressed="false">∿ 자유롭게 연주</button><button id="writing-tempo" aria-label="빠르기와 박자 설정 열기">76 BPM · 리듬 설정 ↗</button></div>
       <p class="writing-privacy">쓴 글은 저장하거나 전송하지 않아요. <span id="text-count">0자</span></p>
     </section>
     <div id="bgm-now" class="bgm-now" data-ui hidden><button id="bgm-details" aria-label="BGM 설정 열기"><span class="record-disc">♫</span><span><strong id="track-title">느린 오후</strong><small id="track-subtitle">LO-FI · KEYS & BEATS</small></span><span id="chord-label">C</span></button><div class="beat-dots" aria-label="현재 박자"><i></i><i></i><i></i><i></i></div></div>
     <button class="settings-handle" id="settings-handle" data-ui aria-label="연주 설정 열기" aria-expanded="false" aria-controls="settings"><span>☷</span><span class="handle-text">SOUND STUDIO</span><span class="handle-dot"></span></button>
     <aside id="settings" class="settings" data-ui aria-label="연주 설정" inert>
       <div class="panel-head"><div><span class="eyebrow">MAKE IT YOURS</span><h2>나만의 사운드</h2></div><button class="icon-button" id="close-settings" aria-label="설정 닫기">×</button></div>
-      <div class="studio-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="tab-sounds" data-tab="sounds" aria-selected="true" aria-controls="pane-sounds">소리</button><button role="tab" id="tab-bgm" data-tab="bgm" aria-selected="false" aria-controls="pane-bgm" tabindex="-1">BGM 합주</button><button role="tab" id="tab-options" data-tab="options" aria-selected="false" aria-controls="pane-options" tabindex="-1">연주 설정</button></div>
+      <div class="studio-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="tab-sounds" data-tab="sounds" aria-selected="true" aria-controls="pane-sounds">소리</button><button role="tab" id="tab-bgm" data-tab="bgm" aria-selected="false" aria-controls="pane-bgm" tabindex="-1">리듬·BGM</button><button role="tab" id="tab-options" data-tab="options" aria-selected="false" aria-controls="pane-options" tabindex="-1">연주 설정</button></div>
       <div id="pane-sounds" role="tabpanel" aria-labelledby="tab-sounds">
       <div class="panel-section"><div class="section-label">01 <span>소리와 분위기</span></div>
         <div class="preset-grid" id="presets"></div>
       </div>
       </div>
       <div id="pane-bgm" role="tabpanel" aria-labelledby="tab-bgm" hidden>
+        <div class="rhythm-studio">
+          <div class="section-label">01 <span>내 손끝의 리듬</span></div>
+          <div class="timing-modes" role="group" aria-label="연주 타이밍"><button data-timing="free" aria-pressed="true"><strong>자유롭게</strong><small>입력하는 순간 바로</small></button><button data-timing="grid" aria-pressed="false"><strong>박자에 맞춰</strong><small>BPM에 맞춰 또박또박</small></button></div>
+          <div class="tempo-heading"><label for="tempo">빠르기 <output id="tempo-value">76 BPM</output></label><label class="sr-only" for="tempo-number">BPM 직접 입력</label><input id="tempo-number" type="number" min="30" max="240" value="76" step="1" inputmode="numeric"></div>
+          <input id="tempo" type="range" min="30" max="240" value="76"><div class="range-ends"><span>느긋하게 · 30</span><span>경쾌하게 · 240</span></div>
+          <div id="division-wrap" hidden><label for="division">얼마나 촘촘하게 연주할까요?</label><select id="division"><option value="1">한 박자마다 · 또박또박</option><option value="2" selected>반 박자마다 · 자연스럽게</option><option value="4">¼박자마다 · 촘촘하게</option></select><p class="field-help">각 박자 안의 마지막 입력을 골라 다음 박자에 연주해요. 마우스와 글쓰기 모두 적용되며, BGM 없이도 작동해요.</p></div>
+          <p class="field-help" id="timing-description">입력한 타이밍 그대로 자유롭게 연주해요.</p>
+        </div>
         <p class="panel-intro">작은 밴드가 곁에서 연주해요.<br>그 위에 당신만의 멜로디를 더해 보세요.</p>
         <div class="track-list"><button class="track selected" data-track="lofi" aria-pressed="true"><span>☕</span><strong>느린 오후<small>LO-FI · 포근한 건반과 느긋한 비트</small></strong><span>76</span></button><button class="track" data-track="forest" aria-pressed="false"><span>❧</span><strong>숲의 호흡<small>AMBIENT · 스트링과 하프의 여백</small></strong><span>60</span></button><button class="track" data-track="night" aria-pressed="false"><span>☾</span><strong>별빛 산책<small>CHILL · 몽환적인 신스와 리듬</small></strong><span>100</span></button></div>
         <button id="bgm-panel-toggle" class="bgm-play">▷ BGM 시작하기</button>
-        <label class="range-label" for="tempo">빠르기 <output id="tempo-value">76 BPM</output></label><input id="tempo" type="range" min="50" max="140" value="76">
         <label class="range-label" for="bgm-volume">반주 음량 <output id="bgm-volume-value">35%</output></label><input id="bgm-volume" type="range" min="0" max="100" value="35">
         <label class="switch-row" for="harmonize"><span>반주에 어울리는 음으로 연주</span><input id="harmonize" type="checkbox" checked></label><p class="field-help">현재 코드에 맞춰 음정을 살짝 맞춰 줘요.<br>조성과 음계를 바꾸면 반주도 함께 바뀝니다.</p>
       </div>
       <div id="pane-options" role="tabpanel" aria-labelledby="tab-options" hidden>
-      <div class="panel-section"><div class="section-label">02 <span>선율의 색깔</span></div><div class="select-row"><label>조성<select id="root"><option value="0">C · 다</option><option value="2">D · 레</option><option value="4">E · 미</option><option value="5">F · 파</option><option value="7">G · 솔</option><option value="9">A · 라</option></select></label><label>음계<select id="scale"><option value="major">밝은 5음계</option><option value="minor">차분한 5음계</option><option value="diatonic">메이저 7음계</option></select></label></div><p class="field-help">오른쪽·위쪽은 높은 음 · 촘촘한 칸에서도 편안한 음역</p></div>
+      <div class="panel-section"><div class="section-label">02 <span>선율의 색깔</span></div><p class="mood-intro">오늘, 어떤 마음으로 연주할까요?<br>느낌을 고르면 악기·음계·잔향을 함께 맞춰 드려요.</p><div id="moods" class="mood-grid"></div><p id="mood-status" class="field-help" aria-live="polite">포근한 위로</p><details id="advanced-melody"><summary>직접 조성·음계 고르기</summary><div class="select-row"><label>조성<select id="root"><option value="0">C · 다</option><option value="2">D · 레</option><option value="4">E · 미</option><option value="5">F · 파</option><option value="7">G · 솔</option><option value="9">A · 라</option></select></label><label>음계<select id="scale"><option value="major">밝은 5음계</option><option value="minor">차분한 5음계</option><option value="diatonic">메이저 7음계</option></select></label></div><p class="field-help">오른쪽·위쪽은 높은 음 · 촘촘한 칸에서도 편안한 음역</p></details></div>
       <div class="select-row"><label>격자 간격<select id="density"><option value="wide">여유롭게</option><option value="dense" selected>촘촘하게</option><option value="fine">아주 촘촘하게</option></select></label></div>
       <div class="panel-section"><div class="section-label">03 <span>공간의 깊이</span></div><label class="range-label" for="volume">음량 <output id="volume-value">55%</output></label><input id="volume" type="range" min="0" max="100" value="55"><label class="range-label" for="reverb">잔향 <output id="reverb-value">40%</output></label><input id="reverb" type="range" min="0" max="100" value="40"><label class="switch-row" for="labels"><span>음이름 표시</span><input id="labels" type="checkbox" checked></label></div>
       </div>
