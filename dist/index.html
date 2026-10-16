@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#eef1e8">
+  <meta name="description" content="마우스의 움직임이 멜로디가 되는 공간. 화면을 자유롭게 누비며 나만의 음악을 지휘해 보세요.">
+  <title>Mouvement — 움직임이 음악이 되는 순간</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="piano">
+  <main id="instrument" aria-label="마우스로 연주하는 음정 공간">
+    <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+    <div id="note-grid" aria-hidden="true"></div>
+    <canvas id="trails" aria-hidden="true"></canvas>
+    <header class="topbar" data-ui>
+      <a class="brand" href="./" aria-label="Mouvement 홈"><span class="brand-icon">m<span>♪</span></span><span>mouvement<span class="brand-sub">A PLAYGROUND FOR SOUND</span></span></a>
+      <div class="top-actions"><span class="live-indicator"><i></i><span id="status">READY TO PLAY</span></span><button id="sound-pill" class="sound-pill" aria-label="소리 설정 열기"><span id="preset-icon">♬</span><span id="preset-name">Felt piano</span><span class="chevron">⌄</span></button><button class="icon-button" id="fullscreen" aria-label="전체 화면" title="전체 화면">⛶</button></div>
+    </header>
+    <div class="side-label label-left">LESS THINKING, MORE FEELING</div><div class="side-label label-right">YOUR MOVEMENT. YOUR MUSIC.</div>
+    <section class="welcome" id="welcome" data-ui>
+      <div class="eyebrow"><span></span> FOLLOW YOUR OWN RHYTHM <span></span></div>
+      <h1>움직임이 <em>음악</em>이<br>되는 순간.</h1>
+      <p>악보도, 정답도 필요 없어요.<br>마우스를 움직이며 당신만의 선율을 그려 보세요.</p>
+      <button id="start" class="start-button"><span>나의 연주 시작하기</span><span class="button-arrow">↗</span></button>
+      <div class="sound-notice"><span>◖))</span> 소리를 켜고, 가볍게 시작해요</div>
+      <div class="gesture"><svg viewBox="0 0 190 55" fill="none" aria-hidden="true"><path d="M5 34C31-7 44 64 75 30S123-3 142 25s29 15 41-14"/><path d="m175 12 10-4-1 11"/></svg><span>just move & feel</span></div>
+    </section>
+    <div class="playing-hint" id="playing-hint"><span>✧</span> 이 공간의 모든 곳이 당신의 악기입니다 <span>✧</span></div>
+    <button class="settings-handle" id="settings-handle" data-ui aria-label="연주 설정 열기" aria-expanded="false" aria-controls="settings"><span>☷</span><span class="handle-text">SOUND STUDIO</span><span class="handle-dot"></span></button>
+    <aside id="settings" class="settings" data-ui aria-label="연주 설정" inert>
+      <div class="panel-head"><div><span class="eyebrow">MAKE IT YOURS</span><h2>나만의 사운드</h2></div><button class="icon-button" id="close-settings" aria-label="설정 닫기">×</button></div>
+      <div class="panel-section"><div class="section-label">01 <span>소리와 분위기</span></div>
+        <div class="preset-grid">
+          <button class="preset selected" data-preset="piano" aria-pressed="true"><span class="preset-art piano-art">♬</span><strong>Felt piano</strong><small>포근한 오후의 피아노</small></button>
+          <button class="preset" data-preset="marimba" aria-pressed="false"><span class="preset-art marimba-art">▥</span><strong>Wooden marimba</strong><small>햇살을 닮은 나무 울림</small></button>
+          <button class="preset" data-preset="strings" aria-pressed="false"><span class="preset-art strings-art">≋</span><strong>Dream strings</strong><small>천천히 번지는 숲의 선율</small></button>
+          <button class="preset" data-preset="synth" aria-pressed="false"><span class="preset-art synth-art">✧</span><strong>Cosmic synth</strong><small>밤하늘을 유영하는 소리</small></button>
+        </div>
+      </div>
+      <div class="panel-section"><div class="section-label">02 <span>선율의 색깔</span></div><div class="select-row"><label>조성<select id="root"><option value="0">C · 다</option><option value="2">D · 레</option><option value="4">E · 미</option><option value="5">F · 파</option><option value="7">G · 솔</option><option value="9">A · 라</option></select></label><label>음계<select id="scale"><option value="major">밝은 5음계</option><option value="minor">차분한 5음계</option><option value="diatonic">메이저 7음계</option></select></label></div><p class="field-help">왼쪽에서 오른쪽으로, 아래에서 위로 갈수록 높은 음</p></div>
+      <div class="panel-section"><div class="section-label">03 <span>공간의 깊이</span></div><label class="range-label" for="volume">음량 <output id="volume-value">55%</output></label><input id="volume" type="range" min="0" max="100" value="55"><label class="range-label" for="reverb">잔향 <output id="reverb-value">40%</output></label><input id="reverb" type="range" min="0" max="100" value="40"><label class="switch-row" for="labels"><span>음이름 표시</span><input id="labels" type="checkbox" checked></label></div>
+      <div class="panel-tip"><span>✦</span><p>마우스로 그려도, 손끝으로 쓸어도.<br>키보드 <kbd>1</kbd>–<kbd>8</kbd>로도 연주할 수 있어요.</p></div>
+    </aside>
+    <footer class="bottom-bar" data-ui>
+      <div class="bottom-left"><span class="tiny-wave"><i></i><i></i><i></i><i></i><i></i></span><span id="scale-label">C MAJOR PENTATONIC</span><span class="separator">/</span><span id="range-label">C3 — G6</span></div>
+      <div class="bottom-center"><span id="current-note">—</span><span id="note-caption">LET IT FLOW</span></div>
+      <div class="bottom-actions"><button id="demo" class="text-button"><span id="demo-icon">▷</span> <span id="demo-label">먼저 들어보기</span></button><span class="footer-divider"></span><button id="mute" class="icon-button" aria-label="음소거" title="음소거 (M)"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path class="sound-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><button id="pause" class="icon-button" aria-label="연주 일시정지" title="일시정지 (Space)">Ⅱ</button></div>
+    </footer>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </main>
+  <script src="app.js"></script>
+</body></html>
