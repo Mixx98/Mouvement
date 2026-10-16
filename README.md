@@ -4,9 +4,9 @@
 
 악보를 몰라도 괜찮습니다. 서로 어울리는 음정으로 채워진 화면에서 선율을 만들고, 계속 변화하는 BGM 위에 즉흥 연주를 더해 보세요.
 
-[사이트 열기](https://mouvement-music-261016.primevine33.chatgpt.site/) · [변경 이력](CHANGELOG.md) · [버전 태그](https://github.com/Mixx98/Mouvement/tags)
+[사이트 열기](https://mixx98.github.io/Mouvement/) · [변경 이력](CHANGELOG.md) · [버전 태그](https://github.com/Mixx98/Mouvement/tags)
 
-> 호스팅 사이트는 소유자 전용으로 설정되어 있어 ChatGPT 로그인이 필요합니다. 소스를 내려받아 실행하면 로그인 없이 사용할 수 있습니다.
+> GitHub Pages에서 로그인 없이 바로 연주할 수 있습니다.
 
 ![일렉기타 테마와 사운드 스튜디오](docs/preview.jpg)
 
@@ -101,7 +101,7 @@ Mouvement/
 
 ## 버전 관리
 
-현재 버전은 **1.0.1**입니다. `main`에서 커밋 이력을 관리하고 릴리스 기준점에는 `v1.0.0` 형태의 주석 달린 Git 태그를 남깁니다.
+현재 버전은 **1.0.2**입니다. `main`에서 커밋 이력을 관리하고 릴리스 기준점에는 `v1.0.0` 형태의 주석 달린 Git 태그를 남깁니다.
 
 - **PATCH** (`1.0.1`): 오류 수정
 - **MINOR** (`1.1.0`): 기존 사용 방식을 유지하는 기능 추가
