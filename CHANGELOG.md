@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-17
+
+### Changed
+
+- 사이트 파일 4개를 `dist/`에서 저장소 최상위로 이동
+- 빈 `dist/` 폴더 제거, 문서·테스트·자동 검사 폴더는 용도별로 유지
+- 실행 명령, 테스트 참조, 문법 검사와 배포 경로를 새 구조에 맞게 수정
+- GitHub Pages의 `main / (root)` 배포 안내와 `.nojekyll` 추가
+
 ## [1.0.0] - 2026-10-17
 
 GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋 이력을 함께 보존했습니다.
@@ -22,5 +31,7 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 - 음악·편곡·키보드 입력 자동 테스트 11개
 - GitHub Actions 자동 검사와 버전 관리 문서
 
-[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.0.1...HEAD
 [1.0.0]: https://github.com/Mixx98/Mouvement/tree/v1.0.0
+
+[1.0.1]: https://github.com/Mixx98/Mouvement/compare/v1.0.0...v1.0.1

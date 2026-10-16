@@ -48,12 +48,12 @@
 ```bash
 git clone https://github.com/Mixx98/Mouvement.git
 cd Mouvement
-python -m http.server 4173 --bind 127.0.0.1 --directory dist
+python -m http.server 4173 --bind 127.0.0.1
 ```
 
 브라우저에서 **http://127.0.0.1:4173**을 열고 **나의 연주 시작하기**를 누르세요. 첫 클릭은 브라우저의 오디오 재생을 활성화합니다. 환경에 따라 `python` 대신 `python3`을 사용하세요.
 
-`dist/index.html`을 직접 열어 사용할 수도 있지만 개발 중에는 로컬 서버 사용을 권장합니다.
+`index.html`을 직접 열어 사용할 수도 있지만 개발 중에는 로컬 서버 사용을 권장합니다.
 
 ## 연주 방법
 
@@ -84,24 +84,24 @@ npm run check
 
 ```text
 Mouvement/
-├── dist/                 # 배포 가능한 사이트
-│   ├── index.html        # 화면 구성
-│   ├── style.css         # 악기별 테마와 반응형 스타일
-│   ├── app.js            # 오디오 엔진, 스케줄러, 입력과 UI
-│   └── music.js          # 음계, 악기, 편곡과 음악 규칙
+├── index.html            # 사이트 진입점
+├── style.css             # 악기별 테마와 반응형 스타일
+├── app.js                # 오디오 엔진, 스케줄러, 입력과 UI
+├── music.js              # 음계, 악기, 편곡과 음악 규칙
 ├── tests/music.test.cjs  # 음악·입력 로직 테스트
-├── docs/preview.jpg      # 화면 미리보기
+├── docs/preview.jpg      # README 화면 미리보기
 ├── .github/workflows/    # 자동 검사
 ├── .openai/hosting.json  # 기존 Sites 배포 설정
+├── .nojekyll             # GitHub Pages 정적 파일 제공
 ├── CHANGELOG.md          # 버전별 변경 이력
 └── package.json          # 버전과 검사 명령
 ```
 
-다른 정적 호스팅에서도 `dist/`를 게시 디렉터리로 지정하면 됩니다. `.openai/hosting.json`은 기존 Sites 배포 설정이며 일반 정적 호스팅에는 필요하지 않습니다.
+.github의 자동 검사는 사이트 배포와 별도로 실행됩니다. GitHub Pages에서는 **Settings → Pages → Deploy from a branch → main → /(root)**를 선택하면 됩니다. GitHub Actions로 배포하는 경우 업로드 경로를 `.`으로 지정하세요. 다른 정적 호스팅에서도 저장소 최상위(`.`)를 게시 디렉터리로 지정하면 됩니다. `.openai/hosting.json`은 기존 Sites 배포 설정이며 일반 정적 호스팅에는 필요하지 않습니다.
 
 ## 버전 관리
 
-현재 버전은 **1.0.0**입니다. `main`에서 커밋 이력을 관리하고 릴리스 기준점에는 `v1.0.0` 형태의 주석 달린 Git 태그를 남깁니다.
+현재 버전은 **1.0.1**입니다. `main`에서 커밋 이력을 관리하고 릴리스 기준점에는 `v1.0.0` 형태의 주석 달린 Git 태그를 남깁니다.
 
 - **PATCH** (`1.0.1`): 오류 수정
 - **MINOR** (`1.1.0`): 기존 사용 방식을 유지하는 기능 추가

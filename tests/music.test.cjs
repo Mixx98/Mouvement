@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
-const M=require('../dist/music.js');
+const M=require('../music.js');
 test('arrangements change every phrase and remain deterministic across lookahead boundaries',()=>{
   for(const seed of [0,1,42,987654321,4294967295]){
     const arrangement=M.createArrangement(seed),again=M.createArrangement(seed),progressions=new Set(),grooves=new Set();let previous;

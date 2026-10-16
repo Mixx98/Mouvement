@@ -1,11 +1,11 @@
 {
   "name": "mouvement",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "마우스 움직임과 글쓰기를 음악으로 바꾸는 인터랙티브 웹사이트",
   "scripts": {
     "test": "node --test tests/music.test.cjs",
-    "check": "node --check dist/app.js && node --check dist/music.js"
+    "check": "node --check app.js && node --check music.js"
   },
   "engines": {
     "node": ">=18"
