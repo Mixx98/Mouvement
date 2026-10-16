@@ -4,6 +4,15 @@
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-17
+
+### Added
+
+- 로고를 활용한 SVG·PNG·ICO 파비콘과 iOS 홈 화면 아이콘
+- 카카오톡 등 링크 공유용 제목·설명, 1200×630 미리보기 카드
+- Open Graph, Twitter Card 및 대표 URL 메타데이터
+- 브랜드 그래픽 재생성 스크립트
+
 ## [1.0.2] - 2026-10-17
 
 ### Changed
@@ -38,9 +47,11 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 - 음악·편곡·키보드 입력 자동 테스트 11개
 - GitHub Actions 자동 검사와 버전 관리 문서
 
-[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.1.0...HEAD
 [1.0.0]: https://github.com/Mixx98/Mouvement/tree/v1.0.0
 
 [1.0.1]: https://github.com/Mixx98/Mouvement/compare/v1.0.0...v1.0.1
 
 [1.0.2]: https://github.com/Mixx98/Mouvement/compare/v1.0.1...v1.0.2
+
+[1.1.0]: https://github.com/Mixx98/Mouvement/compare/v1.0.2...v1.1.0

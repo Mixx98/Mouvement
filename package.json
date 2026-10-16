@@ -1,6 +1,6 @@
 {
   "name": "mouvement",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "private": true,
   "description": "마우스 움직임과 글쓰기를 음악으로 바꾸는 인터랙티브 웹사이트",
   "scripts": {
