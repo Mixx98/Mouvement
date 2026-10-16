@@ -14,7 +14,7 @@
     <canvas id="trails" aria-hidden="true"></canvas>
     <header class="topbar" data-ui>
       <a class="brand" href="./" aria-label="Mouvement 홈"><span class="brand-icon">m<span>♪</span></span><span>mouvement<span class="brand-sub">A PLAYGROUND FOR SOUND</span></span></a>
-      <div class="top-actions"><span class="live-indicator"><i></i><span id="status">READY TO PLAY</span></span><button id="sound-pill" class="sound-pill" aria-label="소리 설정 열기"><span id="preset-icon">♬</span><span id="preset-name">Felt piano</span><span class="chevron">⌄</span></button><button class="icon-button" id="fullscreen" aria-label="전체 화면" title="전체 화면">⛶</button></div>
+      <div class="top-actions"><span class="live-indicator"><i></i><span id="status">READY TO PLAY</span></span><button id="writing-toggle" class="sound-pill" aria-expanded="false" aria-controls="writing"><span>⌨</span><span>글로 연주</span></button><button id="sound-pill" class="sound-pill" aria-label="소리 설정 열기"><span id="preset-icon">♬</span><span id="preset-name">Felt piano</span><span class="chevron">⌄</span></button><button class="icon-button" id="fullscreen" aria-label="전체 화면" title="전체 화면">⛶</button></div>
     </header>
     <div class="side-label label-left">LESS THINKING, MORE FEELING</div><div class="side-label label-right">YOUR MOVEMENT. YOUR MUSIC.</div>
     <section class="welcome" id="welcome" data-ui>
@@ -25,28 +25,44 @@
       <div class="sound-notice"><span>◖))</span> 소리를 켜고, 가볍게 시작해요</div>
       <div class="gesture"><svg viewBox="0 0 190 55" fill="none" aria-hidden="true"><path d="M5 34C31-7 44 64 75 30S123-3 142 25s29 15 41-14"/><path d="m175 12 10-4-1 11"/></svg><span>just move & feel</span></div>
     </section>
-    <div class="playing-hint" id="playing-hint"><span>✧</span> 이 공간의 모든 곳이 당신의 악기입니다 <span>✧</span></div>
+    <div class="playing-hint" id="playing-hint"><span>✧</span> 움직여도, 글을 써도. 당신의 리듬대로. <span>✧</span></div>
+    <section id="writing" class="writing-card" data-ui aria-label="글로 연주" hidden>
+      <div class="writing-head"><div><span class="eyebrow">WORDS INTO MELODY</span><h2>오늘의 마음을 연주해요.</h2></div><button id="close-writing" class="icon-button" aria-label="글쓰기 닫기">×</button></div>
+      <textarea id="music-text" aria-label="연주할 문장" placeholder="오늘 정말 수고했어. 내일도 힘내보자…" spellcheck="false" maxlength="10000"></textarea>
+      <div class="writing-foot"><span>한글도, 영문도. 입력하는 순간 선율이 돼요.</span><label class="sr-only" for="key-mode">글자 음정 방식</label><select id="key-mode"><option value="fixed">글자마다 같은 음</option><option value="random">매번 새로운 음</option></select></div>
+      <p class="writing-privacy">쓴 글은 저장하거나 전송하지 않아요. <span id="text-count">0자</span></p>
+    </section>
+    <div id="bgm-now" class="bgm-now" data-ui hidden><button id="bgm-details" aria-label="BGM 설정 열기"><span class="record-disc">♫</span><span><strong id="track-title">느린 오후</strong><small id="track-subtitle">LO-FI · KEYS & BEATS</small></span><span id="chord-label">C</span></button><div class="beat-dots" aria-label="현재 박자"><i></i><i></i><i></i><i></i></div></div>
     <button class="settings-handle" id="settings-handle" data-ui aria-label="연주 설정 열기" aria-expanded="false" aria-controls="settings"><span>☷</span><span class="handle-text">SOUND STUDIO</span><span class="handle-dot"></span></button>
     <aside id="settings" class="settings" data-ui aria-label="연주 설정" inert>
       <div class="panel-head"><div><span class="eyebrow">MAKE IT YOURS</span><h2>나만의 사운드</h2></div><button class="icon-button" id="close-settings" aria-label="설정 닫기">×</button></div>
+      <div class="studio-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="tab-sounds" data-tab="sounds" aria-selected="true" aria-controls="pane-sounds">소리</button><button role="tab" id="tab-bgm" data-tab="bgm" aria-selected="false" aria-controls="pane-bgm" tabindex="-1">BGM 합주</button><button role="tab" id="tab-options" data-tab="options" aria-selected="false" aria-controls="pane-options" tabindex="-1">연주 설정</button></div>
+      <div id="pane-sounds" role="tabpanel" aria-labelledby="tab-sounds">
       <div class="panel-section"><div class="section-label">01 <span>소리와 분위기</span></div>
-        <div class="preset-grid">
-          <button class="preset selected" data-preset="piano" aria-pressed="true"><span class="preset-art piano-art">♬</span><strong>Felt piano</strong><small>포근한 오후의 피아노</small></button>
-          <button class="preset" data-preset="marimba" aria-pressed="false"><span class="preset-art marimba-art">▥</span><strong>Wooden marimba</strong><small>햇살을 닮은 나무 울림</small></button>
-          <button class="preset" data-preset="strings" aria-pressed="false"><span class="preset-art strings-art">≋</span><strong>Dream strings</strong><small>천천히 번지는 숲의 선율</small></button>
-          <button class="preset" data-preset="synth" aria-pressed="false"><span class="preset-art synth-art">✧</span><strong>Cosmic synth</strong><small>밤하늘을 유영하는 소리</small></button>
-        </div>
+        <div class="preset-grid" id="presets"></div>
       </div>
-      <div class="panel-section"><div class="section-label">02 <span>선율의 색깔</span></div><div class="select-row"><label>조성<select id="root"><option value="0">C · 다</option><option value="2">D · 레</option><option value="4">E · 미</option><option value="5">F · 파</option><option value="7">G · 솔</option><option value="9">A · 라</option></select></label><label>음계<select id="scale"><option value="major">밝은 5음계</option><option value="minor">차분한 5음계</option><option value="diatonic">메이저 7음계</option></select></label></div><p class="field-help">왼쪽에서 오른쪽으로, 아래에서 위로 갈수록 높은 음</p></div>
+      </div>
+      <div id="pane-bgm" role="tabpanel" aria-labelledby="tab-bgm" hidden>
+        <p class="panel-intro">작은 밴드가 곁에서 연주해요.<br>그 위에 당신만의 멜로디를 더해 보세요.</p>
+        <div class="track-list"><button class="track selected" data-track="lofi" aria-pressed="true"><span>☕</span><strong>느린 오후<small>LO-FI · 포근한 건반과 느긋한 비트</small></strong><span>76</span></button><button class="track" data-track="forest" aria-pressed="false"><span>❧</span><strong>숲의 호흡<small>AMBIENT · 스트링과 하프의 여백</small></strong><span>60</span></button><button class="track" data-track="night" aria-pressed="false"><span>☾</span><strong>별빛 산책<small>CHILL · 몽환적인 신스와 리듬</small></strong><span>100</span></button></div>
+        <button id="bgm-panel-toggle" class="bgm-play">▷ BGM 시작하기</button>
+        <label class="range-label" for="tempo">빠르기 <output id="tempo-value">76 BPM</output></label><input id="tempo" type="range" min="50" max="140" value="76">
+        <label class="range-label" for="bgm-volume">반주 음량 <output id="bgm-volume-value">35%</output></label><input id="bgm-volume" type="range" min="0" max="100" value="35">
+        <label class="switch-row" for="harmonize"><span>반주에 어울리는 음으로 연주</span><input id="harmonize" type="checkbox" checked></label><p class="field-help">현재 코드에 맞춰 음정을 살짝 맞춰 줘요.<br>조성과 음계를 바꾸면 반주도 함께 바뀝니다.</p>
+      </div>
+      <div id="pane-options" role="tabpanel" aria-labelledby="tab-options" hidden>
+      <div class="panel-section"><div class="section-label">02 <span>선율의 색깔</span></div><div class="select-row"><label>조성<select id="root"><option value="0">C · 다</option><option value="2">D · 레</option><option value="4">E · 미</option><option value="5">F · 파</option><option value="7">G · 솔</option><option value="9">A · 라</option></select></label><label>음계<select id="scale"><option value="major">밝은 5음계</option><option value="minor">차분한 5음계</option><option value="diatonic">메이저 7음계</option></select></label></div><p class="field-help">오른쪽·위쪽은 높은 음 · 촘촘한 칸에서도 편안한 음역</p></div>
+      <div class="select-row"><label>격자 간격<select id="density"><option value="wide">여유롭게</option><option value="dense" selected>촘촘하게</option><option value="fine">아주 촘촘하게</option></select></label></div>
       <div class="panel-section"><div class="section-label">03 <span>공간의 깊이</span></div><label class="range-label" for="volume">음량 <output id="volume-value">55%</output></label><input id="volume" type="range" min="0" max="100" value="55"><label class="range-label" for="reverb">잔향 <output id="reverb-value">40%</output></label><input id="reverb" type="range" min="0" max="100" value="40"><label class="switch-row" for="labels"><span>음이름 표시</span><input id="labels" type="checkbox" checked></label></div>
-      <div class="panel-tip"><span>✦</span><p>마우스로 그려도, 손끝으로 쓸어도.<br>키보드 <kbd>1</kbd>–<kbd>8</kbd>로도 연주할 수 있어요.</p></div>
+      </div>
+      <div class="panel-tip"><span>✦</span><p>마우스로 그려도, 글을 써 내려가도.<br>문자와 숫자 키가 모두 악기가 됩니다.</p></div>
     </aside>
     <footer class="bottom-bar" data-ui>
       <div class="bottom-left"><span class="tiny-wave"><i></i><i></i><i></i><i></i><i></i></span><span id="scale-label">C MAJOR PENTATONIC</span><span class="separator">/</span><span id="range-label">C3 — G6</span></div>
       <div class="bottom-center"><span id="current-note">—</span><span id="note-caption">LET IT FLOW</span></div>
-      <div class="bottom-actions"><button id="demo" class="text-button"><span id="demo-icon">▷</span> <span id="demo-label">먼저 들어보기</span></button><span class="footer-divider"></span><button id="mute" class="icon-button" aria-label="음소거" title="음소거 (M)"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path class="sound-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><button id="pause" class="icon-button" aria-label="연주 일시정지" title="일시정지 (Space)">Ⅱ</button></div>
+      <div class="bottom-actions"><button id="bgm-toggle" class="text-button" aria-pressed="false"><span id="bgm-icon">▷</span> <span id="bgm-label">BGM과 합주</span></button><span class="footer-divider"></span><button id="mute" class="icon-button" aria-label="음소거" title="음소거"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path class="sound-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button><button id="pause" class="icon-button" aria-label="연주 일시정지" title="일시정지 (글쓰기 밖에서 Space)">Ⅱ</button></div>
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
-  <script src="app.js"></script>
+  <script src="music.js"></script><script src="app.js"></script>
 </body></html>
