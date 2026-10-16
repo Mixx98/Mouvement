@@ -1,6 +1,13 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const M=require('../dist/music.js');
+test('distortion stays bounded and symmetric while adding soft clipping',()=>{
+  for(const amount of [2.5,8]){
+    const curve=M.driveCurve(amount);assert.equal(curve[0],-1);assert.equal(curve.at(-1),1);
+    for(let i=0;i<curve.length;i++){assert.ok(Number.isFinite(curve[i])&&Math.abs(curve[i])<=1);assert.ok(Math.abs(curve[i]+curve[curve.length-1-i])<1e-6);if(i)assert.ok(curve[i]>=curve[i-1]);}
+    assert.ok(curve[Math.floor(curve.length*.75)]>.5);
+  }
+});
 test('moods are complete, distinct musical combinations',()=>{
   assert.equal(Object.keys(M.moods).length,6);
   const signatures=new Set();for(const mood of Object.values(M.moods)){assert.ok(M.presets[mood.preset]);assert.ok(M.scales[mood.scale]);assert.ok([0,2,4,5,7,9].includes(mood.root));assert.ok(mood.reverb>=0&&mood.reverb<=1);signatures.add([mood.preset,mood.root,mood.scale,mood.reverb].join(':'));}assert.equal(signatures.size,6);

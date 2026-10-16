@@ -12,7 +12,11 @@
     epiano:{name:'Velvet keys',icon:'▤',description:'부드러운 빈티지 전자피아노',attack:.007,decay:2.2,filter:4000,partials:[[1,.85,'sine'],[2,.35,'triangle'],[3,.08,'sine']],pluck:true},
     flute:{name:'Airy flute',icon:'∿',description:'바람을 닮은 가벼운 숨결',attack:.075,decay:1.5,filter:4800,partials:[[1,1,'sine'],[2,.15,'sine'],[3,.04,'sine']],vibrato:4.5},
     kalimba:{name:'Pocket kalimba',icon:'⋮',description:'손끝에 담긴 작은 오르골',attack:.002,decay:1.5,filter:7500,partials:[[1,1,'sine'],[3,.2,'sine'],[6,.09,'sine']],pluck:true},
-    organ:{name:'Sunday organ',icon:'▥',description:'공간을 채우는 따뜻한 화음',attack:.025,decay:1.8,filter:4000,level:.65,partials:[[1,.65,'sine'],[2,.35,'sine'],[3,.2,'sine'],[4,.12,'sine']]}
+    organ:{name:'Sunday organ',icon:'▥',description:'공간을 채우는 따뜻한 화음',attack:.025,decay:1.8,filter:4000,level:.65,partials:[[1,.65,'sine'],[2,.35,'sine'],[3,.2,'sine'],[4,.12,'sine']]},
+    guitar:{name:'Electric guitar',icon:'ϟ',description:'거칠게 타오르는 일렉기타',family:'electric',attack:.004,decay:1.35,filter:4600,filterEnd:1100,level:.8,drive:8,partials:[[1,.7,'sawtooth'],[1.003,.22,'triangle'],[2,.12,'sine']],pluck:true,vibrato:5.2},
+    bass:{name:'Acid bass',icon:'≋',description:'묵직하고 쫀득한 전자 베이스',family:'electric',attack:.006,decay:.72,filter:2800,filterEnd:240,resonance:5,transpose:-24,level:.85,drive:2.5,partials:[[1,.65,'sawtooth'],[.5,.35,'sine']]},
+    lead:{name:'Neon lead',icon:'⌁',description:'네온빛처럼 뻗는 전자 리드',family:'electric',attack:.012,decay:1.1,filter:6800,filterEnd:1600,level:.48,partials:[[.996,.45,'sawtooth'],[1.004,.45,'sawtooth'],[2,.1,'square']],vibrato:6},
+    arcade:{name:'8-bit arcade',icon:'▦',description:'통통 튀는 레트로 게임 사운드',family:'electric',attack:.002,decay:.42,filter:6500,level:.4,partials:[[1,.8,'square'],[2,.2,'triangle']],pluck:true}
   };
   const tracks = {
     lofi:{name:'느린 오후',subtitle:'LO-FI · KEYS & BEATS',tempo:76,instrument:'epiano'},
@@ -54,6 +58,7 @@
       input(event){if(event.inputType?.startsWith('delete')||!event.data?.trim()||now()-lastPhysical<180||now()<commitUntil||(composing&&physicalComposition))return null;return Array.from(event.data).at(-1);}
     };
   }
-  const api={scales,names,presets,tracks,moods,nextGridTime,createBeatQueue,gridShape,gridMidi,scaleNote,chordForBar,harmonize,keyMidi,createTypingGate};
+  function driveCurve(amount,size=2048){const curve=new Float32Array(size),normalizer=Math.tanh(amount);for(let i=0;i<size;i++){const x=2*i/(size-1)-1;curve[i]=Math.tanh(amount*x)/normalizer;}return curve;}
+  const api={scales,names,presets,tracks,moods,driveCurve,nextGridTime,createBeatQueue,gridShape,gridMidi,scaleNote,chordForBar,harmonize,keyMidi,createTypingGate};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Music=api;
 })(globalThis);

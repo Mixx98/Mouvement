@@ -19,17 +19,19 @@
   let scheduler=null,nextBeatTime=0,beatIndex=0,currentChord=null,visualTimers=new Set(),audioStarting=null;
   let transportOrigin=0;
   const beatQueue=Music.createBeatQueue();
+  const driveCurves=new Map();
   const grid=$('#note-grid'),canvas=$('#trails'),paint=canvas.getContext('2d');
   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let width=innerWidth,height=innerHeight,dpr=1,rings=[],particles=[],path=[],pointer={x:width/2,y:height/2,visible:false},rgb='111,160,110';
   const midiFor=(col,row)=>gridMidi(col,row,cols,rows,state.root,state.scale);
-  const noteName=midi=>names[midi%12]+(Math.floor(midi/12)-1);
+  const displayMidi=midi=>midi+(presets[state.preset].transpose||0);
+  const noteName=midi=>names[displayMidi(midi)%12]+(Math.floor(displayMidi(midi)/12)-1);
   function buildGrid(){
     cells.forEach(cell=>clearTimeout(cell.fade));[cols,rows]=gridShape(state.density,innerWidth<600);
     if(innerHeight<550)rows=Math.max(6,Math.round(rows*.7));
     grid.style.gridTemplateColumns=`repeat(${cols},1fr)`;grid.style.gridTemplateRows=`repeat(${rows},1fr)`;grid.replaceChildren();cells=[];
     for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
-      const midi=midiFor(col,row),cell=document.createElement('div');cell.className='note-cell';cell.innerHTML=`<span class="note-label">${names[midi%12]}<sub>${Math.floor(midi/12)-1}</sub></span>`;grid.append(cell);cells.push(cell);
+      const midi=displayMidi(midiFor(col,row)),cell=document.createElement('div');cell.className='note-cell';cell.innerHTML=`<span class="note-label">${names[midi%12]}<sub>${Math.floor(midi/12)-1}</sub></span>`;grid.append(cell);cells.push(cell);
     }
     lastCell=-1;$('#range-label').textContent=noteName(midiFor(0,rows-1))+' — '+noteName(midiFor(cols-1,0));$('#scale-label').textContent=names[state.root]+' '+({major:'MAJOR PENTATONIC',minor:'MINOR PENTATONIC',diatonic:'MAJOR SCALE'})[state.scale];
   }
@@ -51,12 +53,13 @@
   function trackVoice(voice){voices=voices.filter(v=>v.end>ctx.currentTime);const group=voices.filter(v=>v.bgm===voice.bgm);if(group.length>=(voice.bgm?30:24)){killVoice(group[0]);voices.splice(voices.indexOf(group[0]),1);}voices.push(voice);}
   function sound(midi,velocity=.7,options={}){
     if(!ctx||ctx.state!=='running'||state.paused||state.muted)return;
-    const now=ctx.currentTime,t=Math.max(now,options.time??now),f=440*Math.pow(2,(midi-69)/12),p=presets[options.preset||state.preset],duration=options.duration||p.decay,attack=Math.min(p.attack,duration*.3);
-    const gain=ctx.createGain(),filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=Math.min(p.filter,f*9);filter.Q.value=.5;gain.connect(filter);
+    const now=ctx.currentTime,t=Math.max(now,options.time??now),p=presets[options.preset||state.preset],f=440*Math.pow(2,(midi+(p.transpose||0)-69)/12),duration=options.duration||p.decay,attack=Math.min(p.attack,duration*.3);
+    const gain=ctx.createGain(),filter=ctx.createBiquadFilter();filter.type='lowpass';filter.frequency.setValueAtTime(Math.min(p.filter,f*9),t);filter.Q.value=p.resonance||.5;if(p.filterEnd)filter.frequency.exponentialRampToValueAtTime(p.filterEnd,t+duration*.8);gain.connect(filter);
     if(options.bgm)filter.connect(bgmBus);else{filter.connect(dry);filter.connect(ctx.reverbInput);}
     const amplitude=.21*(p.level||1)*velocity;gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(Math.max(.0002,amplitude),t+attack);gain.gain.exponentialRampToValueAtTime(.0001,t+duration);
-    const oscs=[],nodes=[gain,filter];
-    p.partials.forEach(([ratio,level,type])=>{const osc=ctx.createOscillator(),g=ctx.createGain();osc.type=type;osc.frequency.value=f*ratio;g.gain.setValueAtTime(level,t);if(p.pluck)g.gain.exponentialRampToValueAtTime(.001,t+duration/(ratio>1?2:1));osc.connect(g);g.connect(gain);osc.start(t);osc.stop(t+duration+.1);oscs.push(osc);nodes.push(osc,g);});
+    const oscs=[],nodes=[gain,filter];let input=gain;
+    if(p.drive){const shaper=ctx.createWaveShaper();if(!driveCurves.has(p.drive))driveCurves.set(p.drive,Music.driveCurve(p.drive));shaper.curve=driveCurves.get(p.drive);shaper.oversample='2x';shaper.connect(gain);input=shaper;nodes.push(shaper);}
+    p.partials.forEach(([ratio,level,type])=>{const osc=ctx.createOscillator(),g=ctx.createGain();osc.type=type;osc.frequency.value=f*ratio;g.gain.setValueAtTime(level,t);if(p.pluck)g.gain.exponentialRampToValueAtTime(.001,t+duration/(ratio>1?2:1));osc.connect(g);g.connect(input);osc.start(t);osc.stop(t+duration+.1);oscs.push(osc);nodes.push(osc,g);});
     if(p.vibrato){const lfo=ctx.createOscillator(),depth=ctx.createGain();lfo.frequency.value=p.vibrato;depth.gain.value=7;lfo.connect(depth);oscs.forEach(o=>depth.connect(o.detune));lfo.start(t);lfo.stop(t+duration+.1);oscs.push(lfo);nodes.push(lfo,depth);}
     trackVoice({gain,oscs,end:t+duration+.2,bgm:!!options.bgm,quantized:!!options.quantized});oscs[0].onended=()=>nodes.forEach(n=>n.disconnect());
   }
@@ -126,8 +129,9 @@
   $('#settings').addEventListener('pointerenter',()=>clearTimeout(closeTimer));$('#settings').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')closeTimer=setTimeout(closeSettings,650);});
   document.addEventListener('pointerdown',e=>{if(document.body.classList.contains('settings-open')&&!e.target.closest('#settings,#settings-handle,#sound-pill,#bgm-details,#writing-tempo'))closeSettings();});
   document.querySelectorAll('[data-tab]').forEach((button,index)=>{button.addEventListener('click',()=>selectTab(button.dataset.tab));button.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const tabs=[...document.querySelectorAll('[data-tab]')];const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;selectTab(tabs[next].dataset.tab);tabs[next].focus();});});
-  $('#presets').innerHTML=Object.entries(presets).map(([id,p])=>`<button class="preset" data-preset="${id}" aria-pressed="false"><span class="preset-art ${id}-art">${p.icon}</span><strong>${p.name}</strong><small>${p.description}</small></button>`).join('');
-  function setPreset(value){state.preset=value;document.body.dataset.theme=value;$('#preset-name').textContent=presets[value].name;$('#preset-icon').textContent=presets[value].icon;document.querySelectorAll('[data-preset]').forEach(b=>{const active=b.dataset.preset===value;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});rgb=getComputedStyle(document.body).getPropertyValue('--rgb').trim();syncMoods();persist();}
+  const presetCard=([id,p])=>`<button class="preset" data-preset="${id}" aria-pressed="false"><span class="preset-art ${id}-art">${p.icon}</span><strong>${p.name}</strong><small>${p.description}</small></button>`;
+  $('#presets').innerHTML='<div class="preset-family"><span>01 / ELECTRIC ENERGY</span><strong>조금 더 대담하게.</strong><small>일렉기타부터 네온빛 전자음까지</small></div>'+Object.entries(presets).filter(([,p])=>p.family==='electric').map(presetCard).join('')+'<div class="preset-family"><span>02 / SOFT & ORGANIC</span><strong>익숙한, 편안한 울림.</strong></div>'+Object.entries(presets).filter(([,p])=>p.family!=='electric').map(presetCard).join('');
+  function setPreset(value){state.preset=value;document.body.dataset.theme=value;$('#preset-name').textContent=presets[value].name;$('#preset-icon').textContent=presets[value].icon;document.querySelectorAll('[data-preset]').forEach(b=>{const active=b.dataset.preset===value;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});rgb=getComputedStyle(document.body).getPropertyValue('--rgb').trim();buildGrid();syncMoods();persist();}
   document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',async()=>{setPreset(b.dataset.preset);if(state.started&&!state.paused){try{await initAudio();sound(60+state.root,.8);}catch(e){toast(e.message);}}}));
   document.querySelectorAll('[data-track]').forEach(b=>b.addEventListener('click',()=>{state.track=b.dataset.track;state.tempo=tracks[state.track].tempo;syncRhythm();syncBgmUI();restartBgm();persist();}));
   for(const key of ['root','scale','density'])$('#'+key).addEventListener('change',e=>{state[key]=key==='root'?Number(e.target.value):e.target.value;beatQueue.clear();buildGrid();if(key!=='density')restartBgm();syncMoods();persist();});
