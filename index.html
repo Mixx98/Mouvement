@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#eef1e8">
-  <meta name="description" content="마우스를 움직이고 글을 쓰면 음악이 됩니다. 14가지 악기와 매번 달라지는 반주 위에 나만의 선율을 더해 보세요.">
-  <title>Mouvement — 움직임이 음악이 되는 순간</title>
+  <meta name="description" content="움직임이 음악이 되는 순간. 마우스를 움직이고 글을 쓰면 음악이 됩니다. 14가지 악기와 매번 달라지는 반주 위에 나만의 선율을 더해 보세요.">
+  <title>무브먼트</title>
   <link rel="canonical" href="https://mixx98.github.io/Mouvement/">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
@@ -12,9 +12,9 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ko_KR">
-  <meta property="og:site_name" content="Mouvement">
-  <meta property="og:title" content="Mouvement · 움직임이 음악이 되는 순간">
-  <meta property="og:description" content="마우스를 움직이고 글을 쓰면 음악이 됩니다. 14가지 악기와 매번 달라지는 반주 위에 나만의 선율을 더해 보세요.">
+  <meta property="og:site_name" content="무브먼트">
+  <meta property="og:title" content="무브먼트">
+  <meta property="og:description" content="움직임이 음악이 되는 순간. 마우스를 움직이고 글을 쓰면 음악이 됩니다. 14가지 악기와 매번 달라지는 반주 위에 나만의 선율을 더해 보세요.">
   <meta property="og:url" content="https://mixx98.github.io/Mouvement/">
   <meta property="og:image" content="https://mixx98.github.io/Mouvement/assets/share-card-v1.png">
   <meta property="og:image:secure_url" content="https://mixx98.github.io/Mouvement/assets/share-card-v1.png">
@@ -23,10 +23,11 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Mouvement — 마우스로, 글쓰기로. 당신만의 음악을 연주하세요.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Mouvement · 움직임이 음악이 되는 순간">
-  <meta name="twitter:description" content="마우스를 움직이고 글을 쓰면 음악이 됩니다. 나만의 선율을 더해 보세요.">
+  <meta name="twitter:title" content="무브먼트">
+  <meta name="twitter:description" content="움직임이 음악이 되는 순간. 마우스를 움직이고 글을 쓰면 음악이 됩니다. 나만의 선율을 더해 보세요.">
   <meta name="twitter:image" content="https://mixx98.github.io/Mouvement/assets/share-card-v1.png">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=1.2.0">
+  <link rel="stylesheet" href="studio.css?v=1.2.0">
 </head>
 <body data-theme="piano">
   <main id="instrument" aria-label="마우스로 연주하는 음정 공간">
@@ -34,7 +35,7 @@
     <div id="note-grid" aria-hidden="true"></div>
     <canvas id="trails" aria-hidden="true"></canvas>
     <header class="topbar" data-ui>
-      <a class="brand" href="./" aria-label="Mouvement 홈"><span class="brand-icon">m<span>♪</span></span><span>mouvement<span class="brand-sub">A PLAYGROUND FOR SOUND</span></span></a>
+      <a class="brand" href="./" aria-label="무브먼트 홈"><span class="brand-icon">m<span>♪</span></span><span>mouvement<span class="brand-sub">A PLAYGROUND FOR SOUND</span></span></a>
       <div class="top-actions"><span class="live-indicator"><i></i><span id="status">READY TO PLAY</span></span><button id="writing-toggle" class="sound-pill" aria-expanded="false" aria-controls="writing"><span>⌨</span><span>글로 연주</span></button><button id="sound-pill" class="sound-pill" aria-label="소리 설정 열기"><span id="preset-icon">♬</span><span id="preset-name">Felt piano</span><span class="chevron">⌄</span></button><button class="icon-button" id="fullscreen" aria-label="전체 화면" title="전체 화면">⛶</button></div>
     </header>
     <div class="side-label label-left">LESS THINKING, MORE FEELING</div><div class="side-label label-right">YOUR MOVEMENT. YOUR MUSIC.</div>
@@ -56,9 +57,13 @@
     </section>
     <div id="bgm-now" class="bgm-now" data-ui hidden><button id="bgm-details" aria-label="BGM 설정 열기"><span class="record-disc">♫</span><span><strong id="track-title">느린 오후</strong><small id="track-subtitle">LO-FI · KEYS & BEATS</small></span><span id="chord-label">C</span></button><div class="beat-dots" aria-label="현재 박자"><i></i><i></i><i></i><i></i></div></div>
     <button class="settings-handle" id="settings-handle" data-ui aria-label="연주 설정 열기" aria-expanded="false" aria-controls="settings"><span>☷</span><span class="handle-text">SOUND STUDIO</span><span class="handle-dot"></span></button>
-    <aside id="settings" class="settings" data-ui aria-label="연주 설정" inert>
-      <div class="panel-head"><div><span class="eyebrow">MAKE IT YOURS</span><h2>나만의 사운드</h2></div><button class="icon-button" id="close-settings" aria-label="설정 닫기">×</button></div>
-      <div class="studio-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="tab-sounds" data-tab="sounds" aria-selected="true" aria-controls="pane-sounds">소리</button><button role="tab" id="tab-bgm" data-tab="bgm" aria-selected="false" aria-controls="pane-bgm" tabindex="-1">리듬·BGM</button><button role="tab" id="tab-options" data-tab="options" aria-selected="false" aria-controls="pane-options" tabindex="-1">연주 설정</button></div>
+    <button id="settings-backdrop" class="settings-backdrop" data-ui aria-label="설정 닫기" tabindex="-1"></button>
+    <aside id="settings" class="settings" data-ui role="dialog" aria-modal="true" aria-label="연주 설정" inert>
+      <div class="settings-header">
+      <div class="panel-head"><div><span class="eyebrow">MAKE IT YOURS</span><h2>나만의 사운드</h2><p class="studio-description">악기를 고르고, 나만의 리듬을 만들어 보세요.</p></div><button class="icon-button" id="close-settings" aria-label="설정 닫기">×</button></div>
+      <div class="studio-tabs" role="tablist" aria-label="설정 종류"><button role="tab" id="tab-sounds" data-tab="sounds" aria-selected="true" aria-controls="pane-sounds">악기</button><button role="tab" id="tab-bgm" data-tab="bgm" aria-selected="false" aria-controls="pane-bgm" tabindex="-1">리듬·반주</button><button role="tab" id="tab-options" data-tab="options" aria-selected="false" aria-controls="pane-options" tabindex="-1">분위기·설정</button></div>
+      </div>
+      <div class="settings-content">
       <div id="pane-sounds" role="tabpanel" aria-labelledby="tab-sounds">
       <div class="panel-section"><div class="section-label">01 <span>소리와 분위기</span></div>
         <div class="preset-grid" id="presets"></div>
@@ -70,8 +75,8 @@
           <div class="timing-modes" role="group" aria-label="연주 타이밍"><button data-timing="free" aria-pressed="true"><strong>자유롭게</strong><small>입력하는 순간 바로</small></button><button data-timing="grid" aria-pressed="false"><strong>박자에 맞춰</strong><small>BPM에 맞춰 또박또박</small></button></div>
           <div class="tempo-heading"><label for="tempo">빠르기 <output id="tempo-value">76 BPM</output></label><label class="sr-only" for="tempo-number">BPM 직접 입력</label><input id="tempo-number" type="number" min="30" max="240" value="76" step="1" inputmode="numeric"></div>
           <input id="tempo" type="range" min="30" max="240" value="76"><div class="range-ends"><span>느긋하게 · 30</span><span>경쾌하게 · 240</span></div>
-          <div id="division-wrap" hidden><label for="division">얼마나 촘촘하게 연주할까요?</label><select id="division"><option value="1">한 박자마다 · 또박또박</option><option value="2" selected>반 박자마다 · 자연스럽게</option><option value="4">¼박자마다 · 촘촘하게</option></select><p class="field-help">각 박자 안의 마지막 입력을 골라 다음 박자에 연주해요. 마우스와 글쓰기 모두 적용되며, BGM 없이도 작동해요.</p></div>
-          <p class="field-help" id="timing-description">입력한 타이밍 그대로 자유롭게 연주해요.</p>
+          <div id="division-wrap" hidden><label for="division">얼마나 촘촘하게 연주할까요?</label><select id="division"><option value="1">한 박자마다 · 또박또박</option><option value="2" selected>반 박자마다 · 자연스럽게</option><option value="4">¼박자마다 · 촘촘하게</option></select><p class="field-help">함께 누른 키나 여러 손가락은 같은 박자에 화음으로 연주해요. 빠르게 이어 쓰는 글은 마지막 입력을 연주해요.</p></div>
+          <p class="field-help" id="timing-description">기본은 자유 연주예요. BGM을 켜면 자동으로 박자 맞춤으로 바뀌어요.</p>
         </div>
         <p class="panel-intro">작은 밴드가 곁에서 연주해요.<br>그 위에 당신만의 멜로디를 더해 보세요.</p>
         <div class="track-list"><button class="track selected" data-track="lofi" aria-pressed="true"><span>☕</span><strong>느린 오후<small>LO-FI · 포근한 건반과 느긋한 비트</small></strong><span>76</span></button><button class="track" data-track="forest" aria-pressed="false"><span>❧</span><strong>숲의 호흡<small>AMBIENT · 스트링과 하프의 여백</small></strong><span>60</span></button><button class="track" data-track="night" aria-pressed="false"><span>☾</span><strong>별빛 산책<small>CHILL · 몽환적인 신스와 리듬</small></strong><span>100</span></button></div>
@@ -85,7 +90,8 @@
       <div class="select-row"><label>격자 간격<select id="density"><option value="wide">여유롭게</option><option value="dense" selected>촘촘하게</option><option value="fine">아주 촘촘하게</option></select></label></div>
       <div class="panel-section"><div class="section-label">03 <span>공간의 깊이</span></div><label class="range-label" for="volume">음량 <output id="volume-value">55%</output></label><input id="volume" type="range" min="0" max="100" value="55"><label class="range-label" for="reverb">잔향 <output id="reverb-value">40%</output></label><input id="reverb" type="range" min="0" max="100" value="40"><label class="switch-row" for="labels"><span>음이름 표시</span><input id="labels" type="checkbox" checked></label></div>
       </div>
-      <div class="panel-tip"><span>✦</span><p>마우스로 그려도, 글을 써 내려가도.<br>문자와 숫자 키가 모두 악기가 됩니다.</p></div>
+      <div class="panel-tip"><span>✦</span><p>마우스로 그려도, 글을 써 내려가도.<br>키를 함께 누르거나 여러 손가락으로 화음을 만들어 보세요.</p></div>
+      </div>
     </aside>
     <footer class="bottom-bar" data-ui>
       <div class="bottom-left"><span class="tiny-wave"><i></i><i></i><i></i><i></i><i></i></span><span id="scale-label">C MAJOR PENTATONIC</span><span class="separator">/</span><span id="range-label">C3 — G6</span></div>
@@ -94,5 +100,5 @@
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
-  <script src="music.js?v=5"></script><script src="app.js?v=5"></script>
+  <script src="music.js?v=1.2.0"></script><script src="app.js?v=1.2.0"></script>
 </body></html>

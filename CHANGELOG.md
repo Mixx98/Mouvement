@@ -4,6 +4,23 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-17
+
+### Added
+
+- 키보드 동시 입력·멀티터치·여러 글자 입력의 최대 6음 화음 연주
+- 화음의 중복 음정 제거와 음량 보정
+- 설정창 뒤로가기·앞으로가기 처리와 빠른 재열림 보호
+- 화음·입력 해제·패널 탐색 회귀 테스트
+
+### Changed
+
+- 사이트 및 링크 공유 제목을 '무브먼트'로 줄이고 소개 문구를 설명으로 이동
+- 기본은 자유 모드, BGM 시작 시 박자 맞춤·종료 시 자유 모드로 자동 전환
+- 큰 글씨·버튼, 고정 헤더와 탭, 독립 스크롤로 설정창 가독성 개선
+- 모바일 상단 버튼의 포커스 이동으로 발생하던 창 튀어 나옴 수정
+- 설정창 슬라이드, 배경 가림, 키보드 포커스 순환과 스크롤 위치 개선
+
 ## [1.1.0] - 2026-10-17
 
 ### Added
@@ -47,7 +64,7 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 - 음악·편곡·키보드 입력 자동 테스트 11개
 - GitHub Actions 자동 검사와 버전 관리 문서
 
-[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.2.0...HEAD
 [1.0.0]: https://github.com/Mixx98/Mouvement/tree/v1.0.0
 
 [1.0.1]: https://github.com/Mixx98/Mouvement/compare/v1.0.0...v1.0.1
@@ -55,3 +72,5 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 [1.0.2]: https://github.com/Mixx98/Mouvement/compare/v1.0.1...v1.0.2
 
 [1.1.0]: https://github.com/Mixx98/Mouvement/compare/v1.0.2...v1.1.0
+
+[1.2.0]: https://github.com/Mixx98/Mouvement/compare/v1.1.0...v1.2.0

@@ -38,6 +38,26 @@
     clear(){events.clear();},
     get size(){return events.size;}
   };}
+  function createHeldNotes(limit=6){const held=new Map();return {
+    press(source,note){held.delete(source);held.set(source,note);return [...held.values()].slice(-limit);},
+    release(source){held.delete(source);},
+    clear(){held.clear();}
+  };}
+  function melodyVoicing(notes,mapMidi=midi=>midi){
+    const unique=new Map();for(const note of notes){const midi=mapMidi(note.midi);if(!unique.has(midi))unique.set(midi,{...note,midi});}
+    return [...unique.values()].slice(-6);
+  }
+  // One history entry belongs to the panel. Back consumes it before leaving the site.
+  function createPanelNavigation({history,onChange}){
+    let opened=false,closing=false,reopen=false;
+    const render=value=>{opened=value;onChange(value);};
+    return {
+      open(){if(closing){reopen=true;return;}if(opened)return;history.pushState({...history.state,mouvementPanel:true},'');render(true);},
+      close(){reopen=false;if(!opened)return;render(false);if(history.state?.mouvementPanel){closing=true;history.back();}},
+      pop(state){closing=false;render(!!state?.mouvementPanel);if(reopen){reopen=false;this.open();}},
+      get opened(){return opened;}
+    };
+  }
   function gridShape(density,mobile){return (mobile?{wide:[6,9],dense:[10,16],fine:[14,22]}:{wide:[12,7],dense:[20,12],fine:[28,16]})[density]||[20,12];}
   function scaleNote(step,root,scale,base=48){const notes=scales[scale];return base+root+Math.floor(step/notes.length)*12+notes[((step%notes.length)+notes.length)%notes.length];}
   function gridMidi(col,row,cols,rows,root,scale){return scaleNote(Math.round(col/(cols-1)*11+(rows-1-row)/(rows-1)*6),root,scale);}
@@ -102,6 +122,6 @@
     };
   }
   function driveCurve(amount,size=2048){const curve=new Float32Array(size),normalizer=Math.tanh(amount);for(let i=0;i<size;i++){const x=2*i/(size-1)-1;curve[i]=Math.tanh(amount*x)/normalizer;}return curve;}
-  const api={scales,names,presets,tracks,moods,driveCurve,nextGridTime,createBeatQueue,gridShape,gridMidi,scaleNote,chordForBar,createArrangement,bgmStep,harmonize,keyMidi,createTypingGate};
+  const api={scales,names,presets,tracks,moods,driveCurve,nextGridTime,createBeatQueue,createHeldNotes,melodyVoicing,createPanelNavigation,gridShape,gridMidi,scaleNote,chordForBar,createArrangement,bgmStep,harmonize,keyMidi,createTypingGate};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Music=api;
 })(globalThis);

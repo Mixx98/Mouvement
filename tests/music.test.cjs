@@ -1,6 +1,36 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const M=require('../music.js');
+test('overlapping keys and touches survive quantization as a bounded chord, sequential typing stays single',()=>{
+  const held=M.createHeldNotes(),queue=M.createBeatQueue();
+  const a={midi:60,index:0},b={midi:64,index:1},c={midi:67,index:2};
+  queue.offer(.5,{notes:held.press('key:KeyA',a)});
+  queue.offer(.5,{notes:held.press('key:KeyS',b)});
+  queue.offer(.5,{notes:held.press('touch:12',c)});
+  held.release('key:KeyA');held.release('key:KeyS');held.release('touch:12');
+  assert.deepEqual(queue.drain(.5)[0][1].notes,[a,b,c]);
+  queue.offer(1,{notes:held.press('key:KeyA',a)});held.release('key:KeyA');
+  queue.offer(1,{notes:held.press('key:KeyS',b)});held.release('key:KeyS');
+  assert.deepEqual(queue.drain(1)[0][1].notes,[b]);
+  held.press('touch:1',a);assert.deepEqual(held.press('touch:1',b),[b]);
+  for(let i=0;i<20;i++)assert.ok(held.press('key:'+i,{midi:48+i}).length<=6);
+  held.clear();assert.deepEqual(held.press('touch:2',c),[c]);
+  const chord=M.chordForBar(0,0,'major');
+  const voiced=M.melodyVoicing([{midi:60},{midi:61},{midi:64},{midi:67}],midi=>M.harmonize(midi,chord,0,'major'));
+  assert.deepEqual(voiced.map(n=>n.midi),[60,64,67]);
+});
+test('panel Back, close button, Forward and rapid reopen consume only panel history',()=>{
+  const entries=[{previousPage:true},null];let cursor=1,pending=0;const renders=[];
+  const history={get state(){return entries[cursor];},pushState(state){entries.splice(cursor+1);entries.push(state);cursor++;},back(){pending++;}};
+  const panel=M.createPanelNavigation({history,onChange:open=>renders.push(open)});
+  panel.open();panel.open();assert.equal(cursor,2);assert.equal(entries.length,3);
+  cursor--;panel.pop(history.state);assert.equal(panel.opened,false);assert.equal(cursor,1);
+  cursor++;panel.pop(history.state);assert.equal(panel.opened,true);
+  panel.close();panel.close();assert.equal(pending,1);assert.equal(panel.opened,false);
+  panel.open();cursor--;pending--;panel.pop(history.state);assert.equal(panel.opened,true);assert.equal(cursor,2);assert.equal(entries.length,3);
+  panel.close();cursor--;pending--;panel.pop(history.state);assert.equal(panel.opened,false);assert.equal(cursor,1);assert.equal(pending,0);
+  panel.close();assert.equal(pending,0);assert.equal(renders.at(-1),false);
+});
 test('arrangements change every phrase and remain deterministic across lookahead boundaries',()=>{
   for(const seed of [0,1,42,987654321,4294967295]){
     const arrangement=M.createArrangement(seed),again=M.createArrangement(seed),progressions=new Set(),grooves=new Set();let previous;

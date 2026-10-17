@@ -4,14 +4,13 @@
   const {presets,scales,names,tracks,moods,nextGridTime,gridShape,gridMidi,harmonize,keyMidi} = Music;
   const state = {started:false,paused:false,muted:false,preset:'piano',root:0,scale:'major',volume:.55,reverb:.4,labels:true,density:'dense',keyMode:'fixed',track:'lofi',tempo:76,bgmVolume:.35,harmonize:true,bgm:false};
   state.timing='free';state.division=2;
-  const savedKeys=['preset','root','scale','volume','reverb','labels','density','keyMode','track','tempo','bgmVolume','harmonize','timing','division'];
+  const savedKeys=['preset','root','scale','volume','reverb','labels','density','keyMode','track','tempo','bgmVolume','harmonize','division'];
   try {
     const saved=JSON.parse(localStorage.getItem('mouvement-settings')||'{}');
     for(const [key,options] of Object.entries({preset:Object.keys(presets),scale:Object.keys(scales),root:[0,2,4,5,7,9],density:['wide','dense','fine'],keyMode:['fixed','random'],track:Object.keys(tracks)}))if(options.includes(saved[key]))state[key]=saved[key];
     for(const key of ['volume','reverb','bgmVolume'])if(Number.isFinite(saved[key]))state[key]=Math.max(0,Math.min(1,saved[key]));
     for(const key of ['labels','harmonize'])if(typeof saved[key]==='boolean')state[key]=saved[key];
     if(Number.isFinite(saved.tempo))state.tempo=Math.max(30,Math.min(240,Math.round(saved.tempo)));
-    if(['free','grid'].includes(saved.timing))state.timing=saved.timing;
     if([1,2,4].includes(saved.division))state.division=saved.division;
   } catch {}
   function persist(){try{localStorage.setItem('mouvement-settings',JSON.stringify(Object.fromEntries(savedKeys.map(k=>[k,state[k]]))));}catch{}}
@@ -19,6 +18,8 @@
   let scheduler=null,nextBeatTime=0,beatIndex=0,currentChord=null,visualTimers=new Set(),audioStarting=null;
   let transportOrigin=0;
   const beatQueue=Music.createBeatQueue();
+  const heldNotes=Music.createHeldNotes();
+  const touchPositions=new Map();
   let arrangement=Music.createArrangement();
   const driveCurves=new Map();
   const grid=$('#note-grid'),canvas=$('#trails'),paint=canvas.getContext('2d');
@@ -88,7 +89,7 @@
   function stopScheduler(){clearInterval(scheduler);scheduler=null;beatQueue.clear();visualTimers.forEach(clearTimeout);visualTimers.clear();if(ctx)voices.filter(v=>v.bgm||v.quantized).forEach(killVoice);currentChord=null;}
   function startScheduler(){stopScheduler();beatIndex=0;transportOrigin=ctx.currentTime+.06;nextBeatTime=transportOrigin;currentChord=arrangement.chord(0,state.root,state.scale);schedulerTick();scheduler=setInterval(schedulerTick,10);}
   function syncBgmUI(){const track=tracks[state.track];$('#bgm-now').hidden=!state.bgm;$('#track-title').textContent=track.name;$('#track-subtitle').textContent=track.subtitle;$('#bgm-toggle').setAttribute('aria-pressed',String(state.bgm));$('#bgm-icon').textContent=state.bgm?'□':'▷';$('#bgm-label').textContent=state.bgm?'BGM 끄기':'BGM과 합주';$('#bgm-panel-toggle').textContent=state.bgm?'□ BGM 멈추기':'▷ BGM 시작하기';$('#bgm-panel-toggle').setAttribute('aria-pressed',String(state.bgm));document.querySelectorAll('[data-track]').forEach(b=>{const selected=b.dataset.track===state.track;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});document.body.classList.toggle('bgm-playing',state.bgm&&!state.paused);}
-  async function toggleBgm(){if(state.bgm)state.bgm=false;else{if(!await start())return;state.bgm=true;arrangement=Music.createArrangement();}restartBgm();applyLevels();syncBgmUI();}
+  async function toggleBgm(){if(state.bgm)state.bgm=false;else{if(!await start())return;state.bgm=true;arrangement=Music.createArrangement();}state.timing=state.bgm?'grid':'free';heldNotes.clear();restartBgm();syncRhythm();applyLevels();syncBgmUI();persist();}
   function restartBgm(){stopScheduler();if((state.bgm||state.timing==='grid')&&!state.paused&&ctx?.state==='running')startScheduler();}
   function flash(index,x,y,midi,caption='IN THE MOMENT'){
     const cell=cells[index];if(!cell)return;cell.classList.add('active');clearTimeout(cell.fade);cell.fade=setTimeout(()=>cell.classList.remove('active'),650);$('#current-note').textContent=noteName(midi);$('#note-caption').textContent=caption;
@@ -98,39 +99,72 @@
   function melodyMidi(midi,time){const chord=state.bgm?arrangement.chord(Math.max(0,Math.floor((time-transportOrigin+.000001)/(240/state.tempo))),state.root,state.scale):null;return chord&&state.harmonize?harmonize(midi,chord,state.root,state.scale):midi;}
   function performMelody(event,time,quantized=false){
     if(state.paused||state.muted)return;
-    const midi=melodyMidi(event.midi,time);sound(midi,event.velocity,{time,quantized});
-    const visual=()=>flash(event.index,event.x,event.y,midi,quantized?'IN THE RHYTHM':event.caption);
+    const notes=Music.melodyVoicing(event.notes||[event],midi=>melodyMidi(midi,time));
+    const velocity=event.velocity/Math.sqrt(Math.max(1,notes.length));
+    for(const note of notes)sound(note.midi,velocity,{time,quantized});
+    const displayNotes=Music.melodyVoicing(event.held||event.notes||[event],midi=>melodyMidi(midi,time));
+    const visual=()=>{for(const note of displayNotes)flash(note.index,note.x,note.y,note.midi,displayNotes.length>1?'IN HARMONY':quantized?'IN THE RHYTHM':event.caption);if(displayNotes.length>1)$('#current-note').textContent=displayNotes.map(note=>noteName(note.midi)).join(' · ');};
     if(quantized){const timer=setTimeout(()=>{visualTimers.delete(timer);if(!state.paused)visual();},Math.max(0,(time-ctx.currentTime)*1000));visualTimers.add(timer);}else visual();
   }
-  function submitMelody(event){if(!ctx||state.paused||state.muted)return;if(state.timing==='free'){performMelody(event,ctx.currentTime);return;}if(!scheduler)startScheduler();beatQueue.offer(nextGridTime(ctx.currentTime,transportOrigin,state.tempo,state.division),event);}
-  function trigger(index,x,y,velocity=.7){if(!state.started||state.paused||!cells[index])return;submitMelody({midi:midiFor(index%cols,Math.floor(index/cols)),index,x,y,velocity,caption:'IN THE MOMENT'});}
+  function submitMelody(event){if(!ctx||state.paused||state.muted)return;if(state.timing==='free'){performMelody(event,ctx.currentTime);return;}if(!scheduler)startScheduler();beatQueue.offer(nextGridTime(ctx.currentTime,transportOrigin,state.tempo,state.division),{...event,notes:event.held||event.notes});}
+  function trigger(index,x,y,velocity=.7,source=null){if(!state.started||state.paused||!cells[index])return;const note={midi:midiFor(index%cols,Math.floor(index/cols)),index,x,y};const held=source?heldNotes.press(source,note):null;submitMelody({...note,held,velocity,caption:'IN THE MOMENT'});}
   async function start(){if(audioStarting)return audioStarting;audioStarting=(async()=>{try{await initAudio();state.started=true;state.paused=false;document.body.classList.add('started');document.body.classList.remove('paused');$('#welcome').inert=true;updateStatus();applyLevels();if((state.bgm||state.timing==='grid')&&!scheduler)startScheduler();return true;}catch(e){toast(e.message||'소리를 시작할 수 없습니다. 다시 눌러 주세요.');return false;}})();const result=await audioStarting;audioStarting=null;return result;}
   function updateStatus(){$('#status').textContent=state.paused?'PAUSED':state.started?'LIVE · YOUR ORCHESTRA':'READY TO PLAY';$('#pause').textContent=state.paused?'▷':'Ⅱ';$('#pause').setAttribute('aria-label',state.paused?'연주 재개':'연주 일시정지');syncBgmUI();}
   $('#start').addEventListener('click',start);
-  window.addEventListener('pointermove',e=>{if(e.target.closest('[data-ui]')){pointer.visible=false;lastCell=-1;return;}pointer={x:e.clientX,y:e.clientY,visible:true};if(!state.started||state.paused||document.body.classList.contains('settings-open'))return;const col=Math.min(cols-1,Math.max(0,Math.floor(e.clientX/width*cols))),row=Math.min(rows-1,Math.max(0,Math.floor(e.clientY/height*rows))),index=row*cols+col,now=performance.now();if(index!==lastCell&&now-lastTime>55){lastCell=index;lastTime=now;trigger(index,e.clientX,e.clientY,.6+Math.random()*.25);}});
-  window.addEventListener('pointerdown',async e=>{if(e.target.closest('[data-ui]'))return;if(!state.started){if(!await start())return;}else if(ctx?.state==='suspended'){try{await ctx.resume();}catch{}}if(state.paused)return;const col=Math.min(cols-1,Math.max(0,Math.floor(e.clientX/width*cols))),row=Math.min(rows-1,Math.max(0,Math.floor(e.clientY/height*rows)));lastCell=row*cols+col;trigger(lastCell,e.clientX,e.clientY,.85);});
+  function pointerCell(e){const col=Math.min(cols-1,Math.max(0,Math.floor(e.clientX/width*cols))),row=Math.min(rows-1,Math.max(0,Math.floor(e.clientY/height*rows)));return row*cols+col;}
+  window.addEventListener('pointermove',e=>{
+    if(e.target.closest('[data-ui]')){pointer.visible=false;lastCell=-1;return;}
+    pointer={x:e.clientX,y:e.clientY,visible:true};
+    if(!state.started||state.paused||document.body.classList.contains('settings-open'))return;
+    const index=pointerCell(e),now=performance.now();
+    if(e.pointerType==='touch'){
+      const previous=touchPositions.get(e.pointerId);if(!previous)return;
+      if(index!==previous.index&&now-previous.time>55){touchPositions.set(e.pointerId,{index,time:now});trigger(index,e.clientX,e.clientY,.75,'touch:'+e.pointerId);}return;
+    }
+    if(index!==lastCell&&now-lastTime>55){lastCell=index;lastTime=now;trigger(index,e.clientX,e.clientY,.6+Math.random()*.25);}
+  });
+  window.addEventListener('pointerdown',async e=>{
+    if(e.target.closest('[data-ui]')||document.body.classList.contains('settings-open'))return;
+    const touch=e.pointerType==='touch',index=pointerCell(e);
+    if(touch)touchPositions.set(e.pointerId,{index,time:performance.now()});
+    if(!state.started){if(!await start())return;}else if(ctx?.state==='suspended'){try{await ctx.resume();}catch{}}
+    if(state.paused||(touch&&!touchPositions.has(e.pointerId)))return;
+    lastCell=index;trigger(index,e.clientX,e.clientY,.85,touch?'touch:'+e.pointerId:null);
+  });
+  for(const type of ['pointerup','pointercancel'])window.addEventListener(type,e=>{touchPositions.delete(e.pointerId);heldNotes.release('touch:'+e.pointerId);});
+  function releaseInputs(){heldNotes.clear();touchPositions.clear();}
+  window.addEventListener('blur',releaseInputs);
   document.documentElement.addEventListener('pointerleave',()=>{lastCell=-1;pointer.visible=false;});
   $('#bgm-toggle').addEventListener('click',toggleBgm);$('#bgm-panel-toggle').addEventListener('click',toggleBgm);
-  $('#mute').addEventListener('click',()=>{state.muted=!state.muted;beatQueue.clear();document.body.classList.toggle('muted',state.muted);$('#mute').setAttribute('aria-label',state.muted?'음소거 해제':'음소거');$('#mute').setAttribute('aria-pressed',String(state.muted));applyLevels();toast(state.muted?'소리를 잠시 껐어요':'소리를 켰어요');});
-  async function togglePause(){if(!state.started){await start();return;}state.paused=!state.paused;if(state.paused)stopScheduler();else{try{await initAudio();restartBgm();}catch(e){state.paused=true;toast(e.message);}}document.body.classList.toggle('paused',state.paused);lastCell=-1;applyLevels();updateStatus();}
+  $('#mute').addEventListener('click',()=>{state.muted=!state.muted;releaseInputs();beatQueue.clear();document.body.classList.toggle('muted',state.muted);$('#mute').setAttribute('aria-label',state.muted?'음소거 해제':'음소거');$('#mute').setAttribute('aria-pressed',String(state.muted));applyLevels();toast(state.muted?'소리를 잠시 껐어요':'소리를 켰어요');});
+  async function togglePause(){if(!state.started){await start();return;}state.paused=!state.paused;if(state.paused){releaseInputs();stopScheduler();}else{try{await initAudio();restartBgm();}catch(e){state.paused=true;toast(e.message);}}document.body.classList.toggle('paused',state.paused);lastCell=-1;applyLevels();updateStatus();}
   $('#pause').addEventListener('click',togglePause);
   $('#fullscreen').addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{toast('이 환경에서는 전체 화면을 지원하지 않아요');}});
   document.addEventListener('fullscreenchange',()=>$('#fullscreen').setAttribute('aria-label',document.fullscreenElement?'전체 화면 종료':'전체 화면'));
-  let closeTimer,hoverTimer;
-  function selectTab(name){document.querySelectorAll('[data-tab]').forEach(button=>{const selected=button.dataset.tab===name;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;$('#pane-'+button.dataset.tab).hidden=!selected;});}
-  function openSettings(tab){clearTimeout(closeTimer);if(tab)selectTab(tab);document.body.classList.add('settings-open');$('#settings').inert=false;$('#settings-handle').setAttribute('aria-expanded','true');lastCell=-1;pointer.visible=false;}
-  function closeSettings(){clearTimeout(hoverTimer);clearTimeout(closeTimer);if($('#settings').contains(document.activeElement))$('#settings-handle').focus();document.body.classList.remove('settings-open');$('#settings').inert=true;$('#settings-handle').setAttribute('aria-expanded','false');lastCell=-1;}
-  $('#settings-handle').addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')hoverTimer=setTimeout(()=>openSettings(),160);});$('#settings-handle').addEventListener('pointerleave',()=>clearTimeout(hoverTimer));$('#settings-handle').addEventListener('click',()=>openSettings());
-  $('#sound-pill').addEventListener('click',()=>{openSettings('sounds');$('#close-settings').focus();});$('#bgm-details').addEventListener('click',()=>openSettings('bgm'));$('#close-settings').addEventListener('click',closeSettings);
-  $('#settings').addEventListener('pointerenter',()=>clearTimeout(closeTimer));$('#settings').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')closeTimer=setTimeout(closeSettings,650);});
+  let closeTimer,hoverTimer,hoverOpened=false;
+  function selectTab(name){if($('#tab-'+name).getAttribute('aria-selected')!=='true')$('.settings-content').scrollTop=0;document.querySelectorAll('[data-tab]').forEach(button=>{const selected=button.dataset.tab===name;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;$('#pane-'+button.dataset.tab).hidden=!selected;});}
+  function renderSettings(open){
+    if(!open&&$('#settings').contains(document.activeElement))$('#settings-handle').focus({preventScroll:true});
+    document.body.classList.toggle('settings-open',open);$('#settings').inert=!open;$('#settings-handle').setAttribute('aria-expanded',String(open));
+    $('#settings-backdrop').tabIndex=-1;lastCell=-1;pointer.visible=false;releaseInputs();
+  }
+  const panelNavigation=Music.createPanelNavigation({history:window.history,onChange:renderSettings});
+  window.addEventListener('popstate',e=>panelNavigation.pop(e.state));
+  if(history.state?.mouvementPanel)panelNavigation.pop(history.state);
+  function openSettings(tab,hover=false){clearTimeout(closeTimer);clearTimeout(hoverTimer);if(!panelNavigation.opened||!hover)hoverOpened=hover;if(tab)selectTab(tab);panelNavigation.open();}
+  function closeSettings(){clearTimeout(hoverTimer);clearTimeout(closeTimer);panelNavigation.close();}
+  $('#settings-backdrop').addEventListener('click',closeSettings);
+  $('#settings-handle').addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&innerWidth>600)hoverTimer=setTimeout(()=>openSettings(null,true),160);});$('#settings-handle').addEventListener('pointerleave',()=>clearTimeout(hoverTimer));$('#settings-handle').addEventListener('click',()=>openSettings());
+  $('#sound-pill').addEventListener('click',()=>{openSettings('sounds');$('#close-settings').focus({preventScroll:true});});$('#bgm-details').addEventListener('click',()=>openSettings('bgm'));$('#close-settings').addEventListener('click',closeSettings);
+  $('#settings').addEventListener('pointerenter',()=>clearTimeout(closeTimer));$('#settings').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&hoverOpened)closeTimer=setTimeout(closeSettings,650);});
   document.addEventListener('pointerdown',e=>{if(document.body.classList.contains('settings-open')&&!e.target.closest('#settings,#settings-handle,#sound-pill,#bgm-details,#writing-tempo'))closeSettings();});
   document.querySelectorAll('[data-tab]').forEach((button,index)=>{button.addEventListener('click',()=>selectTab(button.dataset.tab));button.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const tabs=[...document.querySelectorAll('[data-tab]')];const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(index+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;selectTab(tabs[next].dataset.tab);tabs[next].focus();});});
   const presetCard=([id,p])=>`<button class="preset" data-preset="${id}" aria-pressed="false"><span class="preset-art ${id}-art">${p.icon}</span><strong>${p.name}</strong><small>${p.description}</small></button>`;
   $('#presets').innerHTML='<div class="preset-family"><span>01 / ELECTRIC ENERGY</span><strong>조금 더 대담하게.</strong><small>일렉기타부터 네온빛 전자음까지</small></div>'+Object.entries(presets).filter(([,p])=>p.family==='electric').map(presetCard).join('')+'<div class="preset-family"><span>02 / SOFT & ORGANIC</span><strong>익숙한, 편안한 울림.</strong></div>'+Object.entries(presets).filter(([,p])=>p.family!=='electric').map(presetCard).join('');
-  function setPreset(value){state.preset=value;document.body.dataset.theme=value;$('#preset-name').textContent=presets[value].name;$('#preset-icon').textContent=presets[value].icon;document.querySelectorAll('[data-preset]').forEach(b=>{const active=b.dataset.preset===value;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});rgb=getComputedStyle(document.body).getPropertyValue('--rgb').trim();buildGrid();syncMoods();persist();}
+  function setPreset(value){releaseInputs();state.preset=value;document.body.dataset.theme=value;$('#preset-name').textContent=presets[value].name;$('#preset-icon').textContent=presets[value].icon;document.querySelectorAll('[data-preset]').forEach(b=>{const active=b.dataset.preset===value;b.classList.toggle('selected',active);b.setAttribute('aria-pressed',String(active));});rgb=getComputedStyle(document.body).getPropertyValue('--rgb').trim();buildGrid();syncMoods();persist();}
   document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',async()=>{setPreset(b.dataset.preset);if(state.started&&!state.paused){try{await initAudio();sound(60+state.root,.8);}catch(e){toast(e.message);}}}));
   document.querySelectorAll('[data-track]').forEach(b=>b.addEventListener('click',()=>{state.track=b.dataset.track;arrangement=Music.createArrangement();state.tempo=tracks[state.track].tempo;syncRhythm();syncBgmUI();restartBgm();persist();}));
-  for(const key of ['root','scale','density'])$('#'+key).addEventListener('change',e=>{state[key]=key==='root'?Number(e.target.value):e.target.value;beatQueue.clear();buildGrid();if(key!=='density')restartBgm();syncMoods();persist();});
+  for(const key of ['root','scale','density'])$('#'+key).addEventListener('change',e=>{state[key]=key==='root'?Number(e.target.value):e.target.value;releaseInputs();beatQueue.clear();buildGrid();if(key!=='density')restartBgm();syncMoods();persist();});
   for(const [id,key] of [['volume','volume'],['reverb','reverb'],['bgm-volume','bgmVolume']])$('#'+id).addEventListener('input',e=>{state[key]=Number(e.target.value)/100;$('#'+id+'-value').textContent=e.target.value+'%';applyLevels();syncMoods();persist();});
   function setTempo(value){const number=Number(value);if(value===''||!Number.isFinite(number)){syncRhythm();return;}state.tempo=Math.max(30,Math.min(240,Math.round(number)));syncRhythm();restartBgm();persist();}
   $('#tempo').addEventListener('input',e=>setTempo(e.target.value));
@@ -138,11 +172,11 @@
   $('#tempo-number').addEventListener('change',e=>setTempo(e.target.value));
   $('#tempo-number').addEventListener('blur',e=>setTempo(e.target.value));
   function syncRhythm(){const gridMode=state.timing==='grid';$('#tempo').value=state.tempo;$('#tempo-number').value=state.tempo;$('#tempo-value').textContent=state.tempo+' BPM';$('#division').value=state.division;$('#division-wrap').hidden=!gridMode;$('#timing-description').hidden=gridMode;document.querySelectorAll('[data-timing]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.timing===state.timing)));$('#writing-sync').textContent=gridMode?'♩ 박자에 맞춰 연주':'∿ 자유롭게 연주';$('#writing-sync').setAttribute('aria-pressed',String(gridMode));$('#writing-tempo').textContent=state.tempo+' BPM · 리듬 설정 ↗';}
-  function setTiming(value){state.timing=value;restartBgm();syncRhythm();persist();}
+  function setTiming(value){releaseInputs();state.timing=value;restartBgm();syncRhythm();persist();}
   document.querySelectorAll('[data-timing]').forEach(b=>b.addEventListener('click',()=>setTiming(b.dataset.timing)));
   $('#division').addEventListener('change',e=>{state.division=Number(e.target.value);restartBgm();persist();});
   $('#writing-sync').addEventListener('click',()=>{setTiming(state.timing==='grid'?'free':'grid');$('#music-text').focus();});
-  $('#writing-tempo').addEventListener('click',()=>{openSettings('bgm');$('#tempo-number').focus();});
+  $('#writing-tempo').addEventListener('click',()=>{openSettings('bgm');$('#tempo-number').focus({preventScroll:true});});
   $('#moods').innerHTML=Object.entries(moods).map(([id,m])=>`<button class="mood" data-mood="${id}" aria-pressed="false"><span>${m.icon}</span><strong>${m.name}</strong><small>${m.description}</small></button>`).join('');
   function syncMoods(){let selected=null;document.querySelectorAll('[data-mood]').forEach(b=>{const m=moods[b.dataset.mood],active=state.preset===m.preset&&state.root===m.root&&state.scale===m.scale&&Math.abs(state.reverb-m.reverb)<.001;b.setAttribute('aria-pressed',String(active));if(active)selected=m;});$('#mood-status').textContent=selected?'지금의 분위기 · '+selected.name:'지금의 분위기 · 직접 조합한 선율';}
   document.querySelectorAll('[data-mood]').forEach(b=>b.addEventListener('click',()=>{const m=moods[b.dataset.mood];Object.assign(state,{root:m.root,scale:m.scale,reverb:m.reverb});setPreset(m.preset);$('#root').value=state.root;$('#scale').value=state.scale;$('#reverb').value=state.reverb*100;$('#reverb-value').textContent=Math.round(state.reverb*100)+'%';buildGrid();restartBgm();applyLevels();if(state.started&&!state.paused)sound(60+state.root,.65);persist();}));
@@ -150,22 +184,37 @@
   async function openWriting(){closeSettings();if(!await start())return;$('#writing').hidden=false;document.body.classList.add('typing-open');$('#writing-toggle').setAttribute('aria-expanded','true');$('#music-text').focus();if(state.bgm&&!scheduler)restartBgm();}
   function closeWriting(){$('#writing').hidden=true;document.body.classList.remove('typing-open');$('#writing-toggle').setAttribute('aria-expanded','false');$('#writing-toggle').focus();}
   $('#writing-toggle').addEventListener('click',()=>$('#writing').hidden?openWriting():closeWriting());$('#close-writing').addEventListener('click',closeWriting);
-  async function playKey(key){if(state.paused)return;if(!state.started&&!await start())return;if(ctx.state!=='running'){try{await initAudio();}catch{return;}}const midi=keyMidi(key,state.keyMode,state.root,state.scale);let best=0,distance=Infinity;for(let i=0;i<cells.length;i++){const d=Math.abs(midiFor(i%cols,Math.floor(i/cols))-midi);if(d<distance||(d===distance&&Math.random()<.07)){best=i;distance=d;}}submitMelody({midi,index:best,x:(best%cols+.5)*width/cols,y:(Math.floor(best/cols)+.5)*height/rows,velocity:.75,caption:'WORDS INTO MELODY'});}
+  function noteForKey(key){const midi=keyMidi(key,state.keyMode,state.root,state.scale);let best=0,distance=Infinity;for(let i=0;i<cells.length;i++){const d=Math.abs(midiFor(i%cols,Math.floor(i/cols))-midi);if(d<distance){best=i;distance=d;}}return {midi,index:best,x:(best%cols+.5)*width/cols,y:(Math.floor(best/cols)+.5)*height/rows};}
+  async function playKeys(keys,source=null){
+    if(state.paused)return;const notes=keys.slice(-6).map(noteForKey);
+    const held=source?heldNotes.press(source,notes[0]):notes;
+    if(!state.started&&!await start())return;if(ctx.state!=='running'){try{await initAudio();}catch{return;}}
+    submitMelody({notes,held,velocity:.75,caption:'WORDS INTO MELODY'});
+  }
+  document.addEventListener('keyup',e=>heldNotes.release('key:'+(e.code||e.key)));
   const typingGate=Music.createTypingGate();
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&!e.isComposing){if(document.body.classList.contains('settings-open'))closeSettings();else if(!$('#writing').hidden)closeWriting();return;}
+    if(document.body.classList.contains('settings-open')){
+      if(e.key==='Tab'){
+        const focusable=[...$('#settings').querySelectorAll('button,input,select,textarea,summary,a[href],[tabindex]')].filter(el=>!el.disabled&&el.tabIndex>=0&&el.getClientRects().length);
+        const first=focusable[0],last=focusable.at(-1);if(!$('#settings').contains(document.activeElement)){e.preventDefault();first?.focus({preventScroll:true});}else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus({preventScroll:true});}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus({preventScroll:true});}
+      }
+      return;
+    }
     if(e.ctrlKey||e.metaKey||e.altKey)return;
     const writing=e.target===$('#music-text');if(!writing&&e.target.closest('input,select,textarea,[contenteditable=true]'))return;
     const key=typingGate.key(e);
     if(e.repeat)return;
     if(e.code==='Space'){if(!writing&&!e.isComposing&&!e.target.closest('button,a')){e.preventDefault();togglePause();}return;}
-    if(key)playKey(key);else if(!writing&&!e.isComposing&&e.key.length===1&&e.key.trim())playKey(e.key);
+    if(key)playKeys([key],'key:'+(e.code||e.key));else if(!writing&&!e.isComposing&&e.key.length===1&&e.key.trim())playKeys([e.key],'key:'+(e.code||e.key));
   });
   $('#music-text').addEventListener('compositionstart',()=>typingGate.compositionStart());
   $('#music-text').addEventListener('compositionend',()=>typingGate.compositionEnd());
-  $('#music-text').addEventListener('input',e=>{$('#text-count').textContent=Array.from(e.target.value).length+'자';const key=typingGate.input(e);if(key)playKey(key);});
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){stopScheduler();if(ctx)ctx.suspend().catch(()=>{});lastCell=-1;}else if(state.started&&!state.paused){initAudio().then(restartBgm).catch(()=>toast('화면을 눌러 연주를 이어가세요'));}});
-  function resize(){beatQueue.clear();width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,2);canvas.width=width*dpr;canvas.height=height*dpr;paint.setTransform(dpr,0,0,dpr,0,0);buildGrid();path=[];}
+  $('#music-text').addEventListener('paste',e=>{const keys=Array.from(e.clipboardData?.getData('text')||'').filter(char=>char.trim()).slice(-6);if(keys.length)playKeys(keys);});
+  $('#music-text').addEventListener('input',e=>{$('#text-count').textContent=Array.from(e.target.value).length+'자';if(e.inputType==='insertFromPaste')return;const key=typingGate.input(e);if(key)playKeys(Array.from(e.data||key).filter(char=>char.trim()).slice(-6));});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseInputs();stopScheduler();if(ctx)ctx.suspend().catch(()=>{});lastCell=-1;}else if(state.started&&!state.paused){initAudio().then(restartBgm).catch(()=>toast('화면을 눌러 연주를 이어가세요'));}});
+  function resize(){releaseInputs();beatQueue.clear();width=innerWidth;height=innerHeight;dpr=Math.min(devicePixelRatio||1,2);canvas.width=width*dpr;canvas.height=height*dpr;paint.setTransform(dpr,0,0,dpr,0,0);buildGrid();path=[];}
   let previousFrame=0;
   function draw(now){requestAnimationFrame(draw);if(now-previousFrame<25||document.hidden)return;const delta=Math.min(2,(now-previousFrame)/33.3||1);previousFrame=now;paint.clearRect(0,0,width,height);if(!state.started||state.paused)return;
     for(let i=rings.length-1;i>=0;i--){const r=rings[i];r.age+=delta;const a=Math.max(0,1-r.age/45);if(a<=0){rings.splice(i,1);continue;}const radius=10+r.age*1.5;paint.beginPath();paint.arc(r.x,r.y,radius,0,Math.PI*2);paint.strokeStyle=`rgba(${rgb},${a*.5})`;paint.lineWidth=1;paint.stroke();const gradient=paint.createRadialGradient(r.x,r.y,0,r.x,r.y,radius);gradient.addColorStop(0,`rgba(${rgb},${a*.14})`);gradient.addColorStop(1,`rgba(${rgb},0)`);paint.fillStyle=gradient;paint.fill();}
