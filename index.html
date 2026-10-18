@@ -28,6 +28,7 @@
   <meta name="twitter:image" content="https://mixx98.github.io/Mouvement/assets/share-card-v1.png">
   <link rel="stylesheet" href="style.css?v=1.2.0">
   <link rel="stylesheet" href="studio.css?v=1.2.0">
+  <link rel="stylesheet" href="guide.css?v=1.3.0">
 </head>
 <body data-theme="piano">
   <main id="instrument" aria-label="마우스로 연주하는 음정 공간">
@@ -100,5 +101,14 @@
     </footer>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </main>
-  <script src="music.js?v=1.2.0"></script><script src="app.js?v=1.2.0"></script>
+  <dialog id="guide" class="guide" data-ui aria-labelledby="guide-title" aria-describedby="guide-description">
+    <div class="guide-top"><span>WELCOME TO MOUVEMENT</span><button id="guide-close" class="icon-button" aria-label="사용법 안내 닫기">×</button></div>
+    <div id="guide-art" class="guide-art" aria-hidden="true"><span id="guide-symbol">✧</span><i></i><i></i><i></i></div>
+    <div class="guide-progress"><span id="guide-count">1 / 5</span><div id="guide-dots" aria-hidden="true"></div></div>
+    <div class="guide-copy" aria-live="polite" aria-atomic="true"><h2 id="guide-title"></h2><p id="guide-description"></p><p id="guide-tip"></p></div>
+    <label class="guide-remember"><input type="checkbox" id="guide-hide"><span>다시 보지 않기<small>선택하면 이 브라우저에서 자동 안내를 끕니다.</small></span></label>
+    <div class="guide-actions"><button id="guide-prev">이전</button><button id="guide-next">다음 <span aria-hidden="true">→</span></button></div>
+    <p class="guide-reopen">언제든 화면 아래 <strong>?</strong> 버튼으로 다시 볼 수 있어요.</p>
+  </dialog>
+  <script src="music.js?v=1.3.0"></script><script src="app.js?v=1.3.0"></script>
 </body></html>

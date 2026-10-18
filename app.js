@@ -194,6 +194,7 @@
   document.addEventListener('keyup',e=>heldNotes.release('key:'+(e.code||e.key)));
   const typingGate=Music.createTypingGate();
   document.addEventListener('keydown',e=>{
+    if($('#guide').open)return;
     if(e.key==='Escape'&&!e.isComposing){if(document.body.classList.contains('settings-open'))closeSettings();else if(!$('#writing').hidden)closeWriting();return;}
     if(document.body.classList.contains('settings-open')){
       if(e.key==='Tab'){
@@ -223,4 +224,22 @@
   for(const key of ['root','scale','density','tempo'])$('#'+key).value=state[key];$('#key-mode').value=state.keyMode;
   for(const [id,key] of [['volume','volume'],['reverb','reverb'],['bgm-volume','bgmVolume']]){$('#'+id).value=Math.round(state[key]*100);$('#'+id+'-value').textContent=Math.round(state[key]*100)+'%';}
   syncRhythm();$('#labels').checked=state.labels;$('#harmonize').checked=state.harmonize;document.body.classList.toggle('no-labels',!state.labels);setPreset(state.preset);syncBgmUI();resize();window.addEventListener('resize',resize);requestAnimationFrame(draw);
+  const guide=$('#guide'),guideSteps=Music.guideSteps;
+  const guidePreference=Music.createGuidePreference({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)});
+  let guideIndex=0;
+  const guideHelp=document.createElement('button');guideHelp.id='guide-help';guideHelp.className='icon-button';guideHelp.textContent='?';guideHelp.setAttribute('aria-label','사용법 안내 다시 보기');guideHelp.title='사용법 안내';$('.bottom-actions').insertBefore(guideHelp,$('.footer-divider'));
+  function renderGuide(){
+    const step=guideSteps[guideIndex];$('#guide-title').textContent=step.title;$('#guide-description').textContent=step.description;$('#guide-tip').textContent=step.tip;
+    $('#guide-symbol').textContent=step.symbol;$('#guide-art').dataset.kind=step.kind;$('#guide-count').textContent=`${guideIndex+1} / ${guideSteps.length}`;
+    $('#guide-dots').innerHTML=guideSteps.map((_,index)=>`<i class="${index===guideIndex?'active':''}"></i>`).join('');
+    $('#guide-prev').disabled=guideIndex===0;$('#guide-next').textContent=guideIndex===guideSteps.length-1?'안내 마치기':'다음 →';guide.scrollTop=0;
+  }
+  function openGuide(){closeSettings();releaseInputs();beatQueue.clear();guideIndex=0;$('#guide-hide').checked=guidePreference.hidden();renderGuide();if(!guide.open)guide.showModal();$('#guide-next').focus({preventScroll:true});}
+  function closeGuide(){guide.close();releaseInputs();if(!state.started)$('#start').focus({preventScroll:true});}
+  guideHelp.addEventListener('click',openGuide);$('#guide-close').addEventListener('click',closeGuide);
+  $('#guide-prev').addEventListener('click',()=>{if(guideIndex>0){guideIndex--;renderGuide();}});
+  $('#guide-next').addEventListener('click',()=>{if(guideIndex<guideSteps.length-1){guideIndex++;renderGuide();}else closeGuide();});
+  $('#guide-hide').addEventListener('change',e=>{if(!guidePreference.setHidden(e.target.checked))$('.guide-remember small').textContent='이 브라우저에서는 설정을 저장할 수 없어요.';});
+  guide.addEventListener('cancel',e=>{e.preventDefault();closeGuide();});
+  if(!guidePreference.hidden())openGuide();
 })();

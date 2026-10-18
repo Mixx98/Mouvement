@@ -1,6 +1,13 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const M=require('../music.js');
+test('guide preference defaults to visible, persists opt-out and can be enabled again',()=>{
+  const entries=new Map(),storage={getItem:key=>entries.get(key),setItem:(key,value)=>entries.set(key,value),removeItem:key=>entries.delete(key)};
+  const guide=M.createGuidePreference(storage);assert.equal(guide.hidden(),false);assert.equal(guide.setHidden(true),true);assert.equal(M.createGuidePreference(storage).hidden(),true);
+  assert.equal(guide.setHidden(false),true);assert.equal(M.createGuidePreference(storage).hidden(),false);
+  const blocked=M.createGuidePreference({getItem(){throw Error('blocked');},setItem(){throw Error('blocked');},removeItem(){throw Error('blocked');}});
+  assert.equal(blocked.hidden(),false);assert.equal(blocked.setHidden(true),false);assert.equal(blocked.setHidden(false),false);
+});
 test('overlapping keys and touches survive quantization as a bounded chord, sequential typing stays single',()=>{
   const held=M.createHeldNotes(),queue=M.createBeatQueue();
   const a={midi:60,index:0},b={midi:64,index:1},c={midi:67,index:2};

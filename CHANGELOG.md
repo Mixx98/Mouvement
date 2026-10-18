@@ -4,6 +4,16 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-18
+
+### Added
+
+- 처음 접속할 때 표시되는 5단계 사용 안내: 시작, 마우스·터치, 글쓰기, 악기·분위기, BGM 합주
+- 이전·다음, 단계 표시, 안내 마치기와 닫기
+- 브라우저에 저장되는 '다시 보지 않기'와 화면 아래 도움말 다시 보기 버튼
+- 안내 중 배경 입력 차단, 키보드 포커스 관리와 모바일 레이아웃
+- 안내 표시 설정의 저장·복원 및 저장소 접근 실패 회귀 검사
+
 ## [1.2.0] - 2026-10-17
 
 ### Added
@@ -64,7 +74,7 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 - 음악·편곡·키보드 입력 자동 테스트 11개
 - GitHub Actions 자동 검사와 버전 관리 문서
 
-[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.3.0...HEAD
 [1.0.0]: https://github.com/Mixx98/Mouvement/tree/v1.0.0
 
 [1.0.1]: https://github.com/Mixx98/Mouvement/compare/v1.0.0...v1.0.1
@@ -74,3 +84,5 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 [1.1.0]: https://github.com/Mixx98/Mouvement/compare/v1.0.2...v1.1.0
 
 [1.2.0]: https://github.com/Mixx98/Mouvement/compare/v1.1.0...v1.2.0
+
+[1.3.0]: https://github.com/Mixx98/Mouvement/compare/v1.2.0...v1.3.0

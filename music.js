@@ -2,6 +2,17 @@
 (function (root) {
   const scales = {major:[0,2,4,7,9],minor:[0,3,5,7,10],diatonic:[0,2,4,5,7,9,11]};
   const names = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+  const guideSteps=[
+    {symbol:'✧',kind:'welcome',title:'처음이라도, 음악이 돼요.',description:'악보도, 정답도 필요 없어요. 움직이고 글을 쓰는 것만으로 나만의 선율을 만들 수 있어요.',tip:'안내를 마친 뒤 ‘나의 연주 시작하기’를 눌러 소리를 켜세요.'},
+    {symbol:'∿',kind:'move',title:'화면 위를 가볍게 움직여요.',description:'마우스가 칸을 지나가면 소리가 나요. 모바일에서는 손가락으로 화면을 쓸어 보세요.',tip:'오른쪽·위쪽은 높은 음. 여러 손가락을 함께 올리면 화음이 돼요.'},
+    {symbol:'⌨',kind:'words',title:'오늘의 마음을 글로 연주해요.',description:'위쪽 ‘글로 연주’를 열고 문장을 써 보세요. 한글, 영문, 숫자가 모두 악기가 됩니다.',tip:'키를 함께 누르면 화음으로 연주해요. 입력한 글은 저장하거나 전송하지 않아요.'},
+    {symbol:'♫',kind:'sounds',title:'내 마음에 맞는 소리를 골라요.',description:'상단 악기 버튼이나 오른쪽 설정 탭을 눌러 보세요. 피아노부터 일렉기타까지 14가지 악기가 있어요.',tip:'‘분위기·설정’에서는 느낌으로 고를 수도 있어요. 모바일 뒤로가기는 설정창부터 닫아요.'},
+    {symbol:'♩',kind:'band',title:'작은 밴드와 함께 연주해요.',description:'아래쪽 ‘BGM과 합주’를 누르면 매번 달라지는 반주가 시작돼요. 내 연주도 박자에 맞춰 나와요.',tip:'BGM을 끄면 다시 자유 모드. ‘리듬·반주’에서 빠르기와 연주 방식을 바꿀 수 있어요.'}
+  ];
+  function createGuidePreference(storage){const key='mouvement-guide-hidden';return {
+    hidden(){try{return storage.getItem(key)==='true';}catch{return false;}},
+    setHidden(value){try{if(value)storage.setItem(key,'true');else storage.removeItem(key);return true;}catch{return false;}}
+  };}
   const presets = {
     piano:{name:'Felt piano',icon:'♬',description:'포근한 오후의 피아노',attack:.008,decay:2.4,filter:6500,partials:[[1,1,'triangle'],[2,.24,'sine'],[3,.07,'sine']],pluck:true},
     marimba:{name:'Wooden marimba',icon:'▥',description:'햇살을 닮은 나무 울림',attack:.004,decay:1.15,filter:6000,partials:[[1,1,'sine'],[4,.2,'sine'],[10,.035,'sine']],pluck:true},
@@ -122,6 +133,6 @@
     };
   }
   function driveCurve(amount,size=2048){const curve=new Float32Array(size),normalizer=Math.tanh(amount);for(let i=0;i<size;i++){const x=2*i/(size-1)-1;curve[i]=Math.tanh(amount*x)/normalizer;}return curve;}
-  const api={scales,names,presets,tracks,moods,driveCurve,nextGridTime,createBeatQueue,createHeldNotes,melodyVoicing,createPanelNavigation,gridShape,gridMidi,scaleNote,chordForBar,createArrangement,bgmStep,harmonize,keyMidi,createTypingGate};
+  const api={scales,names,presets,tracks,moods,guideSteps,createGuidePreference,driveCurve,nextGridTime,createBeatQueue,createHeldNotes,melodyVoicing,createPanelNavigation,gridShape,gridMidi,scaleNote,chordForBar,createArrangement,bgmStep,harmonize,keyMidi,createTypingGate};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Music=api;
 })(globalThis);
