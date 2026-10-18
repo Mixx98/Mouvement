@@ -50,7 +50,8 @@
     }
     if(ctx.state!=='running')await ctx.resume();if(ctx.state!=='running')throw new Error('소리를 켜려면 다시 눌러 주세요.');
   }
-  function applyLevels(){if(!ctx)return;const t=ctx.currentTime;master.gain.setTargetAtTime(state.muted||state.paused?0:state.volume*.65,t,.04);dry.gain.setTargetAtTime(1-state.reverb*.25,t,.08);wet.gain.setTargetAtTime(state.reverb*.75,t,.08);bgmBus.gain.setTargetAtTime(state.bgm?state.bgmVolume:0,t,.04);}
+  function syncQuickVolume(){if(!$('#quick-volume'))return;const value=Math.round(state.volume*100);$('#quick-volume').value=value;$('#quick-volume-value').textContent=value+'%';}
+  function applyLevels(){syncQuickVolume();if(!ctx)return;const t=ctx.currentTime;master.gain.setTargetAtTime(state.muted||state.paused?0:state.volume*.65,t,.04);dry.gain.setTargetAtTime(1-state.reverb*.25,t,.08);wet.gain.setTargetAtTime(state.reverb*.75,t,.08);bgmBus.gain.setTargetAtTime(state.bgm?state.bgmVolume:0,t,.04);}
   function killVoice(voice){const t=ctx.currentTime;voice.gain.gain.cancelAndHoldAtTime(t);voice.gain.gain.setTargetAtTime(.0001,t,.02);voice.oscs.forEach(osc=>{try{osc.stop(t+.07);}catch{}});}
   function trackVoice(voice){voices=voices.filter(v=>v.end>ctx.currentTime);const group=voices.filter(v=>v.bgm===voice.bgm);if(group.length>=(voice.bgm?30:24)){killVoice(group[0]);voices.splice(voices.indexOf(group[0]),1);}voices.push(voice);}
   function sound(midi,velocity=.7,options={}){
@@ -225,12 +226,22 @@
   for(const [id,key] of [['volume','volume'],['reverb','reverb'],['bgm-volume','bgmVolume']]){$('#'+id).value=Math.round(state[key]*100);$('#'+id+'-value').textContent=Math.round(state[key]*100)+'%';}
   syncRhythm();$('#labels').checked=state.labels;$('#harmonize').checked=state.harmonize;document.body.classList.toggle('no-labels',!state.labels);setPreset(state.preset);syncBgmUI();resize();window.addEventListener('resize',resize);requestAnimationFrame(draw);
   const guide=$('#guide'),guideSteps=Music.guideSteps;
+  const volumeControl=document.createElement('div');volumeControl.className='volume-control';volumeControl.dataset.ui='';
+  $('#mute').before(volumeControl);volumeControl.append($('#mute'));
+  const volumePopover=document.createElement('div');volumePopover.className='volume-popover';volumePopover.innerHTML='<label for="quick-volume">음량 <output id="quick-volume-value">55%</output></label><input id="quick-volume" type="range" min="0" max="100" step="1" value="55"><small>클릭하면 음소거 · 드래그로 음량 조절</small>';volumeControl.append(volumePopover);syncQuickVolume();
+  $('#mute').title='음소거 · 마우스를 올려 음량 조절';
+  $('#quick-volume').addEventListener('input',e=>{state.volume=Number(e.target.value)/100;if(state.volume>0){state.muted=false;document.body.classList.remove('muted');$('#mute').setAttribute('aria-label','음소거');$('#mute').setAttribute('aria-pressed','false');}$('#volume').value=e.target.value;$('#volume-value').textContent=e.target.value+'%';applyLevels();persist();});
+  volumeControl.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();$('#bgm-toggle').focus({preventScroll:true});}});
   const guidePreference=Music.createGuidePreference({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)});
   let guideIndex=0;
   const guideHelp=document.createElement('button');guideHelp.id='guide-help';guideHelp.className='icon-button';guideHelp.textContent='?';guideHelp.setAttribute('aria-label','사용법 안내 다시 보기');guideHelp.title='사용법 안내';$('.bottom-actions').insertBefore(guideHelp,$('.footer-divider'));
   function renderGuide(){
     const step=guideSteps[guideIndex];$('#guide-title').textContent=step.title;$('#guide-description').textContent=step.description;$('#guide-tip').textContent=step.tip;
-    $('#guide-symbol').textContent=step.symbol;$('#guide-art').dataset.kind=step.kind;$('#guide-count').textContent=`${guideIndex+1} / ${guideSteps.length}`;
+    const mobile=matchMedia('(max-width:600px)').matches,scene=GuideShots.shots[step.kind],shot=scene[mobile?'mobile':'desktop'],layout=GuideShots.layout(shot,mobile);
+    $('#guide-art').dataset.kind=step.kind;$('#guide-screen').src=shot.image;$('#guide-screen').alt=scene.location+'에서 '+scene.label+' — 강조된 영역을 확인하세요.';$('#guide-location').textContent=scene.location;
+    const frame=$('#guide-screen-frame');frame.style.aspectRatio=layout.ratio;frame.style.setProperty('--image-width',layout.imageWidth+'%');frame.style.setProperty('--image-left',layout.imageLeft+'%');frame.style.setProperty('--image-top',layout.imageTop+'%');
+    const highlight=$('#guide-highlight');Object.assign(highlight.style,{left:layout.focusLeft+'%',top:layout.focusTop+'%',width:layout.focusWidth+'%',height:layout.focusHeight+'%'});$('#guide-pin').textContent=guideIndex+1;$('#guide-callout-number').textContent=guideIndex+1;$('#guide-callout-text').textContent=scene.label;$('#guide-callout').classList.toggle('at-top',shot.top);
+    $('#guide-count').textContent=`${guideIndex+1} / ${guideSteps.length}`;
     $('#guide-dots').innerHTML=guideSteps.map((_,index)=>`<i class="${index===guideIndex?'active':''}"></i>`).join('');
     $('#guide-prev').disabled=guideIndex===0;$('#guide-next').textContent=guideIndex===guideSteps.length-1?'안내 마치기':'다음 →';guide.scrollTop=0;
   }
@@ -241,5 +252,6 @@
   $('#guide-next').addEventListener('click',()=>{if(guideIndex<guideSteps.length-1){guideIndex++;renderGuide();}else closeGuide();});
   $('#guide-hide').addEventListener('change',e=>{if(!guidePreference.setHidden(e.target.checked))$('.guide-remember small').textContent='이 브라우저에서는 설정을 저장할 수 없어요.';});
   guide.addEventListener('cancel',e=>{e.preventDefault();closeGuide();});
+  matchMedia('(max-width:600px)').addEventListener('change',()=>{if(guide.open)renderGuide();});
   if(!guidePreference.hidden())openGuide();
 })();

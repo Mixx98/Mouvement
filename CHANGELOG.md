@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-18
+
+### Added
+
+- PC·모바일 실제 화면 캡처와 버튼별 번호·테두리·설명을 겹쳐 보여주는 사용 안내
+- 하단 스피커의 마우스 호버·키보드 포커스 음량 조절 팝업
+- 설정창과 빠른 음량 슬라이더의 값 동기화 및 음량 조절 시 음소거 해제
+- 안내에 음량 조절 단계를 추가하고 기기별 강조 영역 유효성 검사 추가
+
+### Changed
+
+- 사이트 및 공유 카드 제목을 영문 'Mouvement'로 통일
+
 ## [1.3.0] - 2026-10-18
 
 ### Added
@@ -74,7 +87,7 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 - 음악·편곡·키보드 입력 자동 테스트 11개
 - GitHub Actions 자동 검사와 버전 관리 문서
 
-[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/Mixx98/Mouvement/compare/v1.4.0...HEAD
 [1.0.0]: https://github.com/Mixx98/Mouvement/tree/v1.0.0
 
 [1.0.1]: https://github.com/Mixx98/Mouvement/compare/v1.0.0...v1.0.1
@@ -86,3 +99,5 @@ GitHub에서 관리하는 첫 정식 버전입니다. 기존 Sites 개발 커밋
 [1.2.0]: https://github.com/Mixx98/Mouvement/compare/v1.1.0...v1.2.0
 
 [1.3.0]: https://github.com/Mixx98/Mouvement/compare/v1.2.0...v1.3.0
+
+[1.4.0]: https://github.com/Mixx98/Mouvement/compare/v1.3.0...v1.4.0

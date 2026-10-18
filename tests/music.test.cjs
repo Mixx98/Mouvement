@@ -1,6 +1,15 @@
 const assert=require('node:assert/strict');
 const test=require('node:test');
 const M=require('../music.js');
+test('every guide step has a real screenshot and an in-frame highlight on both screen sizes',()=>{
+  const G=require('../guide-shots.js'),fs=require('node:fs'),path=require('node:path');
+  for(const step of M.guideSteps)for(const mobile of [false,true]){
+    const shot=G.shots[step.kind][mobile?'mobile':'desktop'],box=G.layout(shot,mobile),[x,y,w,h]=shot.crop;
+    assert.ok(fs.existsSync(path.join(__dirname,'..',shot.image)));assert.ok(x>=0&&y>=0&&x+w<=box.sourceWidth&&y+h<=box.sourceHeight);
+    assert.ok(box.focusLeft>=0&&box.focusTop>=0);assert.ok(box.focusLeft+box.focusWidth<=100.1&&box.focusTop+box.focusHeight<=100.1);
+    assert.ok(box.focusWidth>0&&box.focusHeight>0);assert.ok(Number.isFinite(box.ratio)&&box.ratio>0);
+  }
+});
 test('guide preference defaults to visible, persists opt-out and can be enabled again',()=>{
   const entries=new Map(),storage={getItem:key=>entries.get(key),setItem:(key,value)=>entries.set(key,value),removeItem:key=>entries.delete(key)};
   const guide=M.createGuidePreference(storage);assert.equal(guide.hidden(),false);assert.equal(guide.setHidden(true),true);assert.equal(M.createGuidePreference(storage).hidden(),true);
